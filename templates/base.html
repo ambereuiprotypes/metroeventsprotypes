@@ -1,133 +1,304 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="h-full">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="csrf-token" content="{{ csrf_token() }}" />
   <title>{% block title %}{{ APP_NAME }}{% endblock %} — Metro Events</title>
 
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/metro.css') }}" />
+  {# ── Fonts: Outfit (brand/headings) + Plus Jakarta Sans (body) ── #}
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  {# ── Tailwind CSS Play CDN (swap for compiled build in production) ── #}
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            brand:  ['Outfit', 'sans-serif'],
+            body:   ['"Plus Jakarta Sans"', 'sans-serif'],
+          },
+          colors: {
+            canvas:  '#F7F8FC',
+            surface: '#FFFFFF',
+            sidebar: '#0B0F1A',
+            'sidebar-2': '#111827',
+            amber: {
+              DEFAULT: '#C9A854',
+              light:   '#F5E6C3',
+              dark:    '#A8843A',
+            },
+          },
+        }
+      }
+    }
+  </script>
+
+  {# ── Design tokens & custom component classes ── #}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/metro.css') }}" />
+
+  {# ── Lucide icon library (replaces all emoji icons) ── #}
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+
   {% block head %}{% endblock %}
 </head>
-<body>
+<body class="h-full font-body bg-canvas text-slate-800 antialiased">
 
+{# ══════════════════════════════════════════════════════════════
+   AUTHENTICATED WORKSPACE LAYOUT
+══════════════════════════════════════════════════════════════ #}
 {% if current_user.is_authenticated %}
-<div id="sidebarOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1039;" class="d-md-none"></div>
 
-<div class="me-layout">
-  <aside class="me-sidebar">
-    <div class="me-sidebar-logo">
-      <div class="brand-name">⚡ {{ APP_NAME }}</div>
-      <div class="brand-tag">{{ APP_TAGLINE }}</div>
-    </div>
+{# Mobile sidebar overlay #}
+<div id="sidebarOverlay"
+     class="fixed inset-0 bg-black/50 z-40 hidden md:hidden transition-opacity duration-200"
+     onclick="closeSidebar()"></div>
 
-    <div class="me-sidebar-user">
-      <div class="me-avatar">{{ current_user.name[0]|upper }}</div>
-      <div>
-        <div class="user-name">{{ current_user.name }}</div>
-        <div class="user-role">{{ current_user.role|title }}</div>
+<div class="flex h-full min-h-screen">
+
+  {# ── SIDEBAR ──────────────────────────────────────────────── #}
+  <aside id="sidebar"
+         class="me-sidebar fixed inset-y-0 left-0 z-50 flex flex-col bg-sidebar
+                w-64 -translate-x-full md:translate-x-0 transition-transform duration-200">
+
+    {# Logo / Brand #}
+    <div class="px-5 py-5 border-b border-white/[0.07]">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-lg bg-amber flex items-center justify-center flex-shrink-0">
+          <i data-lucide="zap" class="w-4 h-4 text-sidebar"></i>
+        </div>
+        <div>
+          <div class="font-brand font-bold text-white text-[15px] leading-tight tracking-tight">
+            {{ APP_NAME }}
+          </div>
+          <div class="text-[10px] text-amber/80 font-medium tracking-widest uppercase mt-0.5">
+            {{ APP_TAGLINE }}
+          </div>
+        </div>
       </div>
     </div>
 
-    <nav class="me-nav">
+    {# User mini-profile #}
+    <div class="px-4 py-3.5 border-b border-white/[0.06] flex items-center gap-3">
+      <div class="w-8 h-8 rounded-full bg-amber flex items-center justify-center
+                  text-sidebar font-bold font-brand text-sm flex-shrink-0">
+        {{ current_user.name[0]|upper }}
+      </div>
+      <div class="min-w-0">
+        <div class="text-white text-[13px] font-semibold leading-tight truncate">
+          {{ current_user.name }}
+        </div>
+        <div class="text-white/40 text-[11px] capitalize">{{ current_user.role }}</div>
+      </div>
+      <a href="{{ url_for('auth.profile') }}"
+         class="ml-auto text-white/30 hover:text-white/70 transition-colors duration-150 flex-shrink-0"
+         title="Profile">
+        <i data-lucide="settings" class="w-3.5 h-3.5"></i>
+      </a>
+    </div>
+
+    {# Navigation #}
+    <nav class="flex-1 overflow-y-auto overflow-x-hidden py-3 px-2 space-y-0.5">
+
       {% if current_user.role == 'client' %}
-        <div class="me-nav-section">Portal</div>
-        <a href="{{ url_for('public.index') }}">
-          <span class="nav-icon">🌐</span> Back to Website
-        </a>
+        {# Client portal nav #}
+        {% include 'partials/_nav_client.html' %}
       {% else %}
-        <div class="me-nav-section">Main</div>
-        <a href="{{ url_for('dashboard.index') }}" class="{{ 'active' if request.endpoint == 'dashboard.index' }}">
-          <span class="nav-icon">🏠</span> Dashboard
+        {# ── Main ── #}
+        <div class="me-nav-label">Main</div>
+
+        <a href="{{ url_for('dashboard.index') }}"
+           class="me-nav-link {{ 'active' if request.endpoint == 'dashboard.index' }}">
+          <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+          <span>Dashboard</span>
         </a>
-        <a href="{{ url_for('events.list_events') }}" class="{{ 'active' if request.blueprint == 'events' }}">
-          <span class="nav-icon">🎉</span> Events
+        <a href="{{ url_for('events.list_events') }}"
+           class="me-nav-link {{ 'active' if request.blueprint == 'events' }}">
+          <i data-lucide="calendar-days" class="w-4 h-4"></i>
+          <span>Events</span>
+          {# Active events badge — injected from context_processor #}
         </a>
-        <a href="{{ url_for('clients.list_clients') }}" class="{{ 'active' if request.blueprint == 'clients' }}">
-          <span class="nav-icon">👥</span> Clients / CRM
+        <a href="{{ url_for('clients.list_clients') }}"
+           class="me-nav-link {{ 'active' if request.blueprint == 'clients' }}">
+          <i data-lucide="users" class="w-4 h-4"></i>
+          <span>Clients &amp; CRM</span>
         </a>
-        <a href="{{ url_for('dashboard.manage_reviews') }}" class="{{ 'active' if request.endpoint == 'dashboard.manage_reviews' }}">
-          <span class="nav-icon">🌟</span> Client Reviews
+        <a href="{{ url_for('dashboard.manage_reviews') }}"
+           class="me-nav-link {{ 'active' if request.endpoint == 'dashboard.manage_reviews' }}">
+          <i data-lucide="star" class="w-4 h-4"></i>
+          <span>Client Reviews</span>
         </a>
 
-        <div class="me-nav-section">Operations</div>
-        <a href="{{ url_for('inventory.list_items') }}" class="{{ 'active' if request.blueprint == 'inventory' }}">
-          <span class="nav-icon">📦</span> Inventory
+        {# ── Operations ── #}
+        <div class="me-nav-label mt-3">Operations</div>
+
+        <a href="{{ url_for('inventory.list_items') }}"
+           class="me-nav-link {{ 'active' if request.blueprint == 'inventory' }}">
+          <i data-lucide="package" class="w-4 h-4"></i>
+          <span>Inventory</span>
         </a>
-        <a href="{{ url_for('meetings.index') }}" class="{{ 'active' if request.blueprint == 'meetings' }}">
-          <span class="nav-icon">📅</span> Meeting Schedules
+        <a href="{{ url_for('meetings.index') }}"
+           class="me-nav-link {{ 'active' if request.blueprint == 'meetings' }}">
+          <i data-lucide="video" class="w-4 h-4"></i>
+          <span>Meetings</span>
         </a>
-        <a href="{{ url_for('suppliers.list_suppliers') }}" class="{{ 'active' if request.blueprint == 'suppliers' }}">
-          <span class="nav-icon">🤝</span> Suppliers Directory
+        <a href="{{ url_for('suppliers.list_suppliers') }}"
+           class="me-nav-link {{ 'active' if request.blueprint == 'suppliers' }}">
+          <i data-lucide="handshake" class="w-4 h-4"></i>
+          <span>Suppliers</span>
+        </a>
+        <a href="{{ url_for('reminders.index') }}"
+           class="me-nav-link {{ 'active' if request.blueprint == 'reminders' }}">
+          <i data-lucide="bell" class="w-4 h-4"></i>
+          <span>Reminders</span>
+          {% if due_soon_count > 0 %}
+          <span class="ml-auto me-badge me-badge-amber">{{ due_soon_count }}</span>
+          {% endif %}
+        </a>
+        <a href="{{ url_for('reports.index') }}"
+           class="me-nav-link {{ 'active' if request.blueprint == 'reports' }}">
+          <i data-lucide="bar-chart-2" class="w-4 h-4"></i>
+          <span>Reports</span>
         </a>
 
+        {# ── Admin ── #}
         {% if current_user.is_admin %}
-        <div class="me-nav-section">Admin</div>
-        <a href="{{ url_for('auth.users_list') }}" class="{{ 'active' if request.endpoint == 'auth.users_list' }}">
-          <span class="nav-icon">🔑</span> Team / Users
+        <div class="me-nav-label mt-3">Admin</div>
+        <a href="{{ url_for('auth.users_list') }}"
+           class="me-nav-link {{ 'active' if request.endpoint == 'auth.users_list' }}">
+          <i data-lucide="shield-check" class="w-4 h-4"></i>
+          <span>Team / Users</span>
         </a>
-        <a href="{{ url_for('auth.register') }}" class="{{ 'active' if request.endpoint == 'auth.register' }}">
-          <span class="nav-icon">➕</span> Add User
+        <a href="{{ url_for('auth.register') }}"
+           class="me-nav-link {{ 'active' if request.endpoint == 'auth.register' }}">
+          <i data-lucide="user-plus" class="w-4 h-4"></i>
+          <span>Add User</span>
         </a>
         {% endif %}
+
       {% endif %}
     </nav>
 
-    <div class="me-sidebar-footer">
-      <a href="{{ url_for('auth.profile') }}" class="{{ 'active' if request.endpoint == 'auth.profile' }}"><span>⚙️</span> Profile</a>
-      <a href="{{ url_for('auth.logout') }}"><span>🚪</span> Logout</a>
+    {# Sidebar footer: logout #}
+    <div class="px-4 py-3 border-t border-white/[0.06]">
+      <a href="{{ url_for('auth.logout') }}"
+         class="flex items-center gap-2.5 text-white/40 hover:text-white/80
+                text-[13px] transition-colors duration-150 group">
+        <i data-lucide="log-out" class="w-4 h-4 group-hover:-translate-x-0.5 transition-transform duration-150"></i>
+        Sign Out
+      </a>
     </div>
   </aside>
 
-  <div class="me-main">
-    <header class="me-topbar">
-      <div class="d-flex align-items-center gap-3">
-        <button id="sidebarToggle" class="d-md-none btn btn-sm btn-outline-secondary">☰</button>
+  {# ── MAIN CONTENT AREA ────────────────────────────────────── #}
+  <div class="flex flex-col flex-1 min-h-screen md:pl-64">
+
+    {# ── TOPBAR ── #}
+    <header class="sticky top-0 z-30 bg-white border-b border-slate-200/80
+                   px-6 flex items-center justify-between h-14 shadow-sm shadow-slate-100">
+      <div class="flex items-center gap-3">
+        {# Mobile hamburger #}
+        <button onclick="openSidebar()"
+                class="md:hidden p-1.5 rounded-md text-slate-500 hover:bg-slate-100
+                       hover:text-slate-900 transition-colors duration-150">
+          <i data-lucide="menu" class="w-5 h-5"></i>
+        </button>
+
+        {# Page title + breadcrumb #}
         <div>
-          <div class="page-title">{% block page_title %}{{ APP_NAME }}{% endblock %}</div>
-          <div class="breadcrumb">{% block breadcrumb %}{% endblock %}</div>
+          <h1 class="font-brand font-bold text-[15px] text-slate-900 leading-none">
+            {% block page_title %}{{ APP_NAME }}{% endblock %}
+          </h1>
+          <div class="text-[11px] text-slate-400 mt-0.5 font-medium">
+            {% block breadcrumb %}{% endblock %}
+          </div>
         </div>
       </div>
-      
-      <div class="d-flex align-items-center gap-2">
-        {% if current_user.role == 'client' %}
-          <a href="{{ url_for('public.index') }}" class="btn btn-sm btn-gold d-none d-sm-inline-block">
-            <span class="me-1">🏠</span> Website Home
-          </a>
+
+      {# Right side: notifications + actions #}
+      <div class="flex items-center gap-2">
+
+        {# Payment alert bell #}
+        {% if overdue_count > 0 %}
+        <button class="relative p-2 rounded-lg text-slate-500 hover:bg-amber-50
+                       hover:text-amber transition-colors duration-150"
+                title="{{ overdue_count }} overdue payment(s)">
+          <i data-lucide="bell-ring" class="w-4.5 h-4.5"></i>
+          <span class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+        </button>
         {% endif %}
-        
+
+        {# Page-level CTA actions #}
         {% block topbar_actions %}{% endblock %}
+
       </div>
     </header>
 
-    <div class="px-4 pt-3">
-      {% with messages = get_flashed_messages(with_categories=true) %}
+    {# ── FLASH MESSAGES ── #}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+      <div class="px-6 pt-4 space-y-2">
         {% for cat, msg in messages %}
-          <div class="me-alert me-alert-{{ 'danger' if cat=='error' else cat }} alert-dismissible fade show" role="alert">
-            {{ msg }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-          </div>
+        <div class="me-alert me-alert-{{ 'danger' if cat == 'error' else cat }}
+                    flex items-start gap-3 rounded-xl px-4 py-3 text-sm font-medium
+                    border shadow-sm" role="alert">
+          {% if cat in ['success', 'info'] %}
+            <i data-lucide="{{ 'circle-check' if cat == 'success' else 'info' }}"
+               class="w-4 h-4 mt-0.5 flex-shrink-0"></i>
+          {% else %}
+            <i data-lucide="triangle-alert" class="w-4 h-4 mt-0.5 flex-shrink-0"></i>
+          {% endif %}
+          <span class="flex-1">{{ msg }}</span>
+          <button onclick="this.parentElement.remove()"
+                  class="opacity-50 hover:opacity-100 transition-opacity flex-shrink-0">
+            <i data-lucide="x" class="w-4 h-4"></i>
+          </button>
+        </div>
         {% endfor %}
-      {% endwith %}
-    </div>
+      </div>
+      {% endif %}
+    {% endwith %}
 
-    <main class="me-content">
+    {# ── PAGE CONTENT WORKSPACE ── #}
+    <main class="flex-1 p-6">
       {% block content %}{% endblock %}
     </main>
+
+    {# ── FOOTER ── #}
+    <footer class="px-6 py-3 border-t border-slate-100">
+      <p class="text-[11px] text-slate-400">
+        {{ APP_NAME }} &mdash; All rights reserved &copy; {{ now.year if now else '2025' }}
+      </p>
+    </footer>
+  </div>
+
+</div>
+
+{# ── MODAL SLOT (page templates inject modal content here) ── #}
+<div id="modalBackdrop"
+     class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center p-4"
+     onclick="closeModal(event)">
+  <div id="modalContainer"
+       class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh]
+              overflow-y-auto relative">
+    {% block modal %}{% endblock %}
   </div>
 </div>
 
 {% else %}
+{# ══ AUTH / PUBLIC PAGES (no sidebar) ══ #}
   {% block auth_content %}{% endblock %}
 {% endif %}
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+{# ── SCRIPTS ────────────────────────────────────────────────── #}
 <script src="{{ url_for('static', filename='js/metro.js') }}"></script>
+<script>
+  // Initialise all Lucide icons on the page
+  lucide.createIcons();
+</script>
 {% block scripts %}{% endblock %}
 </body>
 </html>

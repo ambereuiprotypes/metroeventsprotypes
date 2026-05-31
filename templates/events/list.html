@@ -1,100 +1,188 @@
 {% extends "base.html" %}
 {% block title %}Events{% endblock %}
 {% block page_title %}Events{% endblock %}
-{% block breadcrumb %}Events{% endblock %}
+{% block breadcrumb %}Events / All{% endblock %}
+
 {% block topbar_actions %}
-  <a href="{{ url_for('events.new_event') }}" class="btn-gold">➕ New Event</a>
+  <a href="{{ url_for('events.new_event') }}" class="me-btn me-btn-primary">
+    <i data-lucide="plus"></i>
+    New Event
+  </a>
 {% endblock %}
 
 {% block content %}
-<!-- Filters -->
-<div class="d-flex flex-wrap gap-2 mb-3">
-  <form class="d-flex gap-2" method="GET">
-    <input type="text" name="q" class="me-form-control" placeholder="Search events…"
-           value="{{ search }}" style="width:200px;" />
-    <select name="status" class="me-form-control" style="width:160px;">
-      <option value="">All Statuses</option>
-      {% for s in statuses %}
-      <option value="{{ s }}" {{ 'selected' if status_filter == s }}>{{ s|replace('_',' ')|title }}</option>
-      {% endfor %}
-    </select>
-    <select name="type" class="me-form-control" style="width:140px;">
-      <option value="">All Types</option>
-      {% for t in types %}
-      <option value="{{ t }}" {{ 'selected' if type_filter == t }}>{{ t|title }}</option>
-      {% endfor %}
-    </select>
-    <button type="submit" class="btn-outline-gold">Filter</button>
-    <a href="{{ url_for('events.list_events') }}" class="btn btn-outline-secondary">Reset</a>
-  </form>
-</div>
 
+{# ── SEARCH & FILTER TOOLBAR ────────────────────────────────── #}
+<form method="GET" class="me-toolbar mb-4">
+  {# Search #}
+  <div class="me-search-wrap">
+    <i data-lucide="search"></i>
+    <input type="text" name="q" class="me-search"
+           placeholder="Search by name, client, venue…"
+           value="{{ search }}" />
+  </div>
+
+  {# Status filter #}
+  <select name="status" class="me-select" style="width:160px;">
+    <option value="">All Statuses</option>
+    {% for s in statuses %}
+    <option value="{{ s }}" {{ 'selected' if status_filter == s }}>
+      {{ s|replace('_',' ')|title }}
+    </option>
+    {% endfor %}
+  </select>
+
+  {# Type filter #}
+  <select name="type" class="me-select" style="width:140px;">
+    <option value="">All Types</option>
+    {% for t in types %}
+    <option value="{{ t }}" {{ 'selected' if type_filter == t }}>{{ t|title }}</option>
+    {% endfor %}
+  </select>
+
+  <button type="submit" class="me-btn me-btn-secondary">
+    <i data-lucide="sliders-horizontal"></i>
+    Filter
+  </button>
+
+  {% if search or status_filter or type_filter %}
+  <a href="{{ url_for('events.list_events') }}" class="me-btn me-btn-ghost">
+    <i data-lucide="x"></i>
+    Clear
+  </a>
+  {% endif %}
+</form>
+
+{# ── EVENTS DATA TABLE ──────────────────────────────────────── #}
 <div class="me-card">
-  <div class="me-card-body p-0">
+  <div class="me-table-wrap">
     <table class="me-table">
       <thead>
         <tr>
-          <th>Event</th><th>Client</th><th>Date</th><th>Venue</th><th>Type</th>
-          <th>Status</th><th>Balance</th><th></th>
+          <th>Event</th>
+          <th>Client</th>
+          <th>Date</th>
+          <th>Venue</th>
+          <th>Type</th>
+          <th>Status</th>
+          <th>Balance</th>
+          <th></th>
         </tr>
       </thead>
       <tbody>
         {% for e in events.items %}
         <tr>
+          {# Event name + quick-info #}
           <td>
-            <a href="{{ url_for('events.detail', event_id=e.id) }}" style="font-weight:700;color:#1A1A2E;">
+            <a href="{{ url_for('events.detail', event_id=e.id) }}"
+               class="font-semibold text-slate-900 hover:text-amber transition-colors block">
               {{ e.name }}
             </a>
           </td>
+
+          {# Client #}
           <td>
-            <a href="{{ url_for('clients.detail', client_id=e.client.id) }}" class="text-muted-sm">
+            <a href="{{ url_for('clients.detail', client_id=e.client.id) }}"
+               class="text-slate-500 hover:text-amber transition-colors text-[13px]">
               {{ e.client.full_name }}
             </a>
           </td>
+
+          {# Date + countdown #}
           <td>
-            {{ e.event_date|dateformat }}
+            <span class="font-semibold text-[13px]">{{ e.event_date|dateformat }}</span>
             {% if e.days_until >= 0 and e.status not in ['done','cancelled'] %}
-            <div class="text-muted-sm">
               {% if e.days_until == 0 %}
-              <span style="color:#F56565;font-weight:700;">TODAY</span>
+                <div class="me-badge me-badge-red mt-1">TODAY</div>
               {% elif e.days_until <= 7 %}
-              <span style="color:#ECC94B;">{{ e.days_until }}d away</span>
+                <div class="text-[11px] text-amber font-semibold mt-0.5">{{ e.days_until }}d away</div>
               {% else %}
-              {{ e.days_until }}d away
+                <div class="text-[11px] text-slate-400 mt-0.5">{{ e.days_until }}d away</div>
               {% endif %}
-            </div>
             {% endif %}
           </td>
-          <td class="text-muted-sm">{{ e.venue_name or '—' }}</td>
-          <td><span class="badge bg-secondary">{{ e.event_type|title }}</span></td>
-          <td><span class="badge bg-{{ e.status_color }}">{{ e.status|replace('_',' ')|title }}</span></td>
+
+          {# Venue #}
+          <td class="cell-muted">{{ e.venue_name or '—' }}</td>
+
+          {# Type badge #}
+          <td>
+            <span class="me-badge me-badge-slate">{{ e.event_type|title }}</span>
+          </td>
+
+          {# Status badge #}
+          <td>
+            <span class="me-badge me-badge-{{ e.status_color }}">
+              {{ e.status|replace('_',' ')|title }}
+            </span>
+          </td>
+
+          {# Balance #}
           <td>
             {% if e.balance_due > 0 %}
-            <span style="color:#F56565;font-weight:700;">{{ e.balance_due|peso }}</span>
+              <span class="font-bold text-red-500 text-[13px]">{{ e.balance_due|peso }}</span>
             {% elif e.active_quote %}
-            <span style="color:#48BB78;font-weight:700;">PAID ✓</span>
-            {% else %}—{% endif %}
+              <span class="font-semibold text-green-500 text-[13px] flex items-center gap-1">
+                <i data-lucide="circle-check" class="w-3 h-3"></i> Paid
+              </span>
+            {% else %}
+              <span class="cell-muted">—</span>
+            {% endif %}
           </td>
-          <td>
-            <a href="{{ url_for('events.detail', event_id=e.id) }}" class="btn btn-sm btn-outline-secondary">Open →</a>
+
+          {# Action #}
+          <td class="text-right">
+            <a href="{{ url_for('events.detail', event_id=e.id) }}"
+               class="me-btn me-btn-secondary me-btn-sm">
+              Open
+              <i data-lucide="arrow-right"></i>
+            </a>
           </td>
         </tr>
         {% else %}
-        <tr><td colspan="8" class="text-center text-muted-sm py-4">No events found.</td></tr>
+        <tr>
+          <td colspan="8">
+            <div class="me-empty py-12">
+              <i data-lucide="calendar-x" class="me-empty-icon"></i>
+              <div class="me-empty-title">No events found</div>
+              <p class="me-empty-desc">
+                {% if search or status_filter or type_filter %}
+                  Try adjusting your filters.
+                {% else %}
+                  Create your first event to get started.
+                {% endif %}
+              </p>
+              {% if not (search or status_filter or type_filter) %}
+              <a href="{{ url_for('events.new_event') }}"
+                 class="me-btn me-btn-primary mt-4">
+                <i data-lucide="plus"></i> New Event
+              </a>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
+
+  {# ── PAGINATION ── #}
+  {% if events.pages > 1 %}
+  <div class="me-pagination">
+    <span class="text-[12px] text-slate-400 mr-auto">
+      Page {{ events.page }} of {{ events.pages }}
+    </span>
+    {% for p in events.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+      {% if p %}
+        <a href="{{ url_for('events.list_events', page=p, status=status_filter, type=type_filter, q=search) }}"
+           class="me-page-btn {{ 'active' if p == events.page }}">{{ p }}</a>
+      {% else %}
+        <span class="me-page-btn" style="pointer-events:none;color:var(--color-text-muted)">…</span>
+      {% endif %}
+    {% endfor %}
+  </div>
+  {% endif %}
+
 </div>
 
-{% if events.pages > 1 %}
-<nav class="mt-3 d-flex justify-content-center gap-1">
-  {% for p in events.iter_pages() %}
-    {% if p %}
-      <a href="{{ url_for('events.list_events', page=p, status=status_filter, type=type_filter, q=search) }}"
-         class="btn btn-sm {{ 'btn-dark' if p == events.page else 'btn-outline-secondary' }}">{{ p }}</a>
-    {% else %}<span class="btn btn-sm disabled">…</span>{% endif %}
-  {% endfor %}
-</nav>
-{% endif %}
 {% endblock %}

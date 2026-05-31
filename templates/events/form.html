@@ -3,29 +3,57 @@
 {% block page_title %}{{ 'Edit' if event else 'New' }} Event{% endblock %}
 
 {% block breadcrumb %}
-  <a href="{{ url_for('events.list_events') }}">Events</a> → {{ 'Edit' if event else 'New' }}
+  <a href="{{ url_for('events.list_events') }}" class="hover:text-amber transition-colors">Events</a>
+  <span class="mx-1.5">/</span>
+  {{ 'Edit' if event else 'Create' }}
 {% endblock %}
 
 {% block content %}
-<div style="max-width:760px;">
+
+{# ── FORM WRAPPER — constrained width, workspace-centric ─────── #}
+<div class="max-w-3xl mx-auto">
+
+  {# Form card #}
   <div class="me-card">
     <div class="me-card-header">
-      <h5>{{ '✏️ Edit Event' if event else '🎉 Create New Event' }}</h5>
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-lg bg-amber-light flex items-center justify-center">
+          <i data-lucide="{{ 'pencil' if event else 'calendar-plus' }}"
+             class="w-4 h-4 text-amber-dark"></i>
+        </div>
+        <div>
+          <h5 class="me-card-title">{{ 'Edit Event Details' if event else 'Create New Event' }}</h5>
+          {% if event %}
+          <p class="text-[11px] text-slate-400 mt-0.5">Last updated {{ event.updated_at|dateformat if event.updated_at else 'never' }}</p>
+          {% endif %}
+        </div>
+      </div>
     </div>
-    <div class="me-card-body">
-      <form method="POST">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-        
-        <div class="row g-3">
-          <div class="col-12">
-            <label class="me-form-label">Event Name *</label>
-            <input type="text" name="name" class="me-form-control" required placeholder="e.g. JD & Ana Wedding"
-                   value="{{ event.name if event else '' }}" />
-          </div>
 
-          <div class="col-md-6">
-            <label class="me-form-label">Client *</label>
-            <select name="client_id" class="me-form-control" required>
+    <div class="me-card-body">
+      <form method="POST" id="eventForm">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+
+        {# ── Section: Core Details ── #}
+        <div class="me-section-label mb-3">Core Details</div>
+
+        <div class="me-form-group">
+          <label class="me-label">
+            Event Name
+            <span class="text-red-400 ml-0.5">*</span>
+          </label>
+          <input type="text" name="name" class="me-input" required
+                 placeholder="e.g. JD & Ana Wedding Reception"
+                 value="{{ event.name if event else '' }}" />
+        </div>
+
+        <div class="me-form-row me-form-row-2">
+          <div class="me-form-group">
+            <label class="me-label">
+              Client
+              <span class="text-red-400 ml-0.5">*</span>
+            </label>
+            <select name="client_id" class="me-select" required>
               <option value="">Select client…</option>
               {% for c in clients %}
               <option value="{{ c.id }}" {{ 'selected' if event and event.client_id == c.id }}>
@@ -35,9 +63,9 @@
             </select>
           </div>
 
-          <div class="col-md-6">
-            <label class="me-form-label">Coordinator</label>
-            <select name="coordinator_id" class="me-form-control">
+          <div class="me-form-group">
+            <label class="me-label">Coordinator</label>
+            <select name="coordinator_id" class="me-select">
               <option value="">Unassigned</option>
               {% for u in coordinators %}
               <option value="{{ u.id }}" {{ 'selected' if event and event.coordinator_id == u.id }}>
@@ -46,122 +74,169 @@
               {% endfor %}
             </select>
           </div>
+        </div>
 
-          <div class="col-md-4">
-            <label class="me-form-label">Event Type *</label>
-            <select name="event_type" class="me-form-control" required>
+        {# ── Section: Event Classification ── #}
+        <div class="me-section-label mb-3 mt-6">Classification</div>
+
+        <div class="me-form-row me-form-row-3">
+          <div class="me-form-group">
+            <label class="me-label">
+              Event Type
+              <span class="text-red-400 ml-0.5">*</span>
+            </label>
+            <select name="event_type" class="me-select" required>
               {% for t in types %}
-              <option value="{{ t }}" {{ 'selected' if event and event.event_type == t }}>{{ t|title }}</option>
+              <option value="{{ t }}" {{ 'selected' if event and event.event_type == t }}>
+                {{ t|title }}
+              </option>
               {% endfor %}
             </select>
           </div>
 
-          <div class="col-md-4">
-            <label class="me-form-label">Status</label>
-            <select name="status" class="me-form-control">
+          <div class="me-form-group">
+            <label class="me-label">Status</label>
+            <select name="status" class="me-select">
               {% for s in statuses %}
-              <option value="{{ s }}" {{ 'selected' if event and event.status == s }}>{{ s|replace('_',' ')|title }}</option>
+              <option value="{{ s }}" {{ 'selected' if event and event.status == s }}>
+                {{ s|replace('_',' ')|title }}
+              </option>
               {% endfor %}
             </select>
           </div>
 
-          <div class="col-md-4">
-            <label class="me-form-label">Event Date *</label>
-            <input type="date" name="event_date" class="me-form-control" required
+          <div class="me-form-group">
+            <label class="me-label">
+              Event Date
+              <span class="text-red-400 ml-0.5">*</span>
+            </label>
+            <input type="date" name="event_date" class="me-input" required
                    value="{{ event.event_date.strftime('%Y-%m-%d') if event and event.event_date else '' }}" />
           </div>
+        </div>
 
-          <div class="col-md-3">
-            <label class="me-form-label">Start Time</label>
-            <input type="time" name="event_time_start" class="me-form-control"
+        <div class="me-form-row me-form-row-2">
+          <div class="me-form-group">
+            <label class="me-label">Start Time</label>
+            <input type="time" name="event_time_start" class="me-input"
                    value="{{ event.event_time_start.strftime('%H:%M') if event and event.event_time_start else '' }}" />
           </div>
-          <div class="col-md-3">
-            <label class="me-form-label">End Time</label>
-            <input type="time" name="event_time_end" class="me-form-control"
+          <div class="me-form-group">
+            <label class="me-label">End Time</label>
+            <input type="time" name="event_time_end" class="me-input"
                    value="{{ event.event_time_end.strftime('%H:%M') if event and event.event_time_end else '' }}" />
           </div>
-          <div class="col-md-3">
-            <label class="me-form-label">Call Time (Crew)</label>
-            <input type="time" name="call_time" class="me-form-control"
-                   value="{{ event.call_time.strftime('%H:%M') if event and event.call_time else '' }}" />
-          </div>
-          <div class="col-md-3">
-            <label class="me-form-label">Setup Deadline</label>
-            <input type="time" name="setup_deadline" class="me-form-control"
-                   value="{{ event.setup_deadline.strftime('%H:%M') if event and event.setup_deadline else '' }}" />
-          </div>
+        </div>
 
-          <div class="col-md-6">
-            <label class="me-form-label">Venue Name</label>
-            <input type="text" name="venue_name" class="me-form-control"
+        {# ── Section: Venue ── #}
+        <div class="me-section-label mb-3 mt-6">Venue</div>
+
+        <div class="me-form-row me-form-row-2">
+          <div class="me-form-group">
+            <label class="me-label">Venue Name</label>
+            <input type="text" name="venue_name" class="me-input"
+                   placeholder="e.g. Garden Ballroom, Manila Hotel"
                    value="{{ event.venue_name if event else '' }}" />
           </div>
-          <div class="col-md-6">
-            <label class="me-form-label">Package Name</label>
-            <input type="text" name="package_name" class="me-form-control" placeholder="e.g. Metro Gold Package"
-                   value="{{ event.package_name if event else '' }}" />
+          <div class="me-form-group">
+            <label class="me-label">Expected Guests</label>
+            <input type="number" name="expected_guests" class="me-input" min="0"
+                   placeholder="0"
+                   value="{{ event.expected_guests if event else '' }}" />
           </div>
+        </div>
 
-          <div class="col-12">
-            <label class="me-form-label">Venue Address</label>
-            <textarea name="venue_address" class="me-form-control" rows="2">{{ event.venue_address if event else '' }}</textarea>
-          </div>
+        <div class="me-form-group">
+          <label class="me-label">Venue Address</label>
+          <input type="text" name="venue_address" class="me-input"
+                 placeholder="Full address…"
+                 value="{{ event.venue_address if event else '' }}" />
+        </div>
 
-          <div class="col-md-6">
-            <label class="me-form-label">Color Palette <small class="text-muted">(comma-sep hex, e.g. #FFF, #C9A84C)</small></label>
-            <input type="text" id="colorPaletteInput" name="color_palette" class="me-form-control"
-                   placeholder="#E8C97A, #1A1A2E, #FFFFFF"
-                   value="{{ event.color_palette if event else '' }}" />
-            <div id="colorPalettePreview" class="mt-2 d-flex gap-1"></div>
-          </div>
+        {# ── Section: Notes ── #}
+        <div class="me-section-label mb-3 mt-6">Notes</div>
 
-          <div class="col-md-6">
-            <label class="me-form-label">Total Budget</label>
-            <input type="number" name="total_budget" class="me-form-control" min="0" step="0.01"
-                   value="{{ event.total_budget if event else '' }}" />
-          </div>
+        <div class="me-form-group">
+          <label class="me-label">
+            Internal Notes
+            <span class="me-label-hint ml-2">Not visible to client</span>
+          </label>
+          <textarea name="notes" class="me-textarea"
+                    placeholder="Planning notes, special requirements, vendor contacts…">{{ event.notes if event else '' }}</textarea>
+        </div>
 
-          <div class="col-12">
-            <label class="me-form-label">Team Notes</label>
-            <textarea name="team_notes" class="me-form-control" rows="2">{{ event.team_notes if event else '' }}</textarea>
-          </div>
-          <div class="col-12">
-            <label class="me-form-label">Internal Notes</label>
-            <textarea name="internal_notes" class="me-form-control" rows="2">{{ event.internal_notes if event else '' }}</textarea>
-          </div>
+        {# ── FORM ACTIONS ── #}
+        <div class="flex items-center justify-between gap-3 mt-8 pt-6 border-t border-slate-100">
+          <a href="{{ url_for('events.list_events') }}"
+             class="me-btn me-btn-ghost">
+            <i data-lucide="arrow-left"></i>
+            Cancel
+          </a>
 
-          <div class="col-12 d-flex gap-2 mt-1">
-            <button type="submit" class="btn-gold">{{ 'Save Changes' if event else 'Create Event' }}</button>
-            <a href="{{ url_for('events.list_events') }}" class="btn btn-outline-secondary">Cancel</a>
+          <div class="flex items-center gap-2">
+            {% if event %}
+            {# Delete action — triggers confirmation modal #}
+            <button type="button"
+                    onclick="openDeleteModal({{ event.id }}, '{{ event.name }}')"
+                    class="me-btn me-btn-danger">
+              <i data-lucide="trash-2"></i>
+              Delete
+            </button>
+            {% endif %}
+
+            <button type="submit" class="me-btn me-btn-primary">
+              <i data-lucide="{{ 'save' if event else 'calendar-plus' }}"></i>
+              {{ 'Save Changes' if event else 'Create Event' }}
+            </button>
           </div>
         </div>
       </form>
     </div>
   </div>
+
 </div>
 
+{# ── DELETE CONFIRMATION MODAL ──────────────────────────────── #}
+{% if event %}
+<div id="deleteModalContent" class="hidden">
+  <div class="me-modal-header">
+    <h2 class="me-modal-title text-red-600 flex items-center gap-2">
+      <i data-lucide="triangle-alert" class="w-5 h-5"></i>
+      Delete Event
+    </h2>
+    <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600">
+      <i data-lucide="x" class="w-5 h-5"></i>
+    </button>
+  </div>
+  <div class="me-modal-body">
+    <p class="text-slate-600 text-sm leading-relaxed">
+      Are you sure you want to permanently delete
+      <strong id="deleteEventName" class="text-slate-900"></strong>?
+      This action cannot be undone and will remove all associated tasks, payments and logs.
+    </p>
+  </div>
+  <div class="me-modal-footer">
+    <button onclick="closeModal()" class="me-btn me-btn-secondary">Cancel</button>
+    <form id="deleteEventForm" method="POST" class="inline">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <button type="submit" class="me-btn me-btn-danger">
+        <i data-lucide="trash-2"></i>
+        Delete Permanently
+      </button>
+    </form>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
 <script>
-  // Dynamic Color Palette Previewer
-  const colorInput = document.getElementById('colorPaletteInput');
-  const colorPreview = document.getElementById('colorPalettePreview');
-
-  function updatePreview() {
-    const colors = colorInput.value.split(',').map(c => c.trim()).filter(c => c.startsWith('#'));
-    colorPreview.innerHTML = '';
-    colors.forEach(color => {
-      const swatch = document.createElement('div');
-      swatch.style.width = '24px';
-      swatch.style.height = '24px';
-      swatch.style.borderRadius = '4px';
-      swatch.style.backgroundColor = color;
-      swatch.style.border = '1px solid #ddd';
-      swatch.title = color;
-      colorPreview.appendChild(swatch);
-    });
-  }
-
-  colorInput.addEventListener('input', updatePreview);
-  window.addEventListener('load', updatePreview); // Preview on edit-mode load
+function openDeleteModal(eventId, eventName) {
+  document.getElementById('deleteEventName').textContent = eventName;
+  document.getElementById('deleteEventForm').action =
+    `/events/${eventId}/delete`;
+  openModal('deleteModalContent');
+}
 </script>
 {% endblock %}

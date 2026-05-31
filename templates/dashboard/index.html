@@ -1,224 +1,325 @@
 {% extends "base.html" %}
 {% block title %}Dashboard{% endblock %}
 {% block page_title %}Dashboard{% endblock %}
-{% block breadcrumb %}Home{% endblock %}
+{% block breadcrumb %}Home / Overview{% endblock %}
+
 {% block topbar_actions %}
-  <a href="{{ url_for('events.new_event') }}" class="btn-gold">➕ New Event</a>
+  <a href="{{ url_for('events.new_event') }}" class="me-btn me-btn-primary">
+    <i data-lucide="plus" class="w-4 h-4"></i>
+    New Event
+  </a>
 {% endblock %}
 
 {% block content %}
 
-{# ── KPI Cards ─────────────────────────────────────────────── #}
-<div class="row g-3 mb-4">
-  <div class="col-6 col-lg-3">
-    <div class="kpi-card">
-      <div class="kpi-icon gold">🎉</div>
-      <div>
-        <div class="kpi-value">{{ total_events }}</div>
-        <div class="kpi-label">Total Events</div>
-      </div>
-    </div>
-  </div>
-  <div class="col-6 col-lg-3">
-    <div class="kpi-card">
-      <div class="kpi-icon blue">⚡</div>
-      <div>
-        <div class="kpi-value">{{ active_events }}</div>
-        <div class="kpi-label">Active Events</div>
-      </div>
-    </div>
-  </div>
-  <div class="col-6 col-lg-3">
-    <div class="kpi-card">
-      <div class="kpi-icon green">👥</div>
-      <div>
-        <div class="kpi-value">{{ total_clients }}</div>
-        <div class="kpi-label">Total Clients</div>
-      </div>
-    </div>
-  </div>
-  <div class="col-6 col-lg-3">
-    <div class="kpi-card">
-      <div class="kpi-icon red">🔔</div>
-      <div>
-        <div class="kpi-value">{{ new_inquiries }}</div>
-        <div class="kpi-label">New Inquiries</div>
-      </div>
-    </div>
-  </div>
-</div>
+{# ══════════════════════════════════════════════════════════════
+   KPI METRIC CARDS
+══════════════════════════════════════════════════════════════ #}
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
 
-{# ── Row 2: Upcoming Events (left) + Overdue Tasks (right) ──── #}
-<div class="row g-4 mb-4">
-
-  {# Upcoming Events #}
-  <div class="col-lg-8">
-    <div class="me-card h-100">
-      <div class="me-card-header">
-        <h5>📅 Upcoming Events (Next 30 Days)</h5>
-        <a href="{{ url_for('events.list_events') }}" class="text-muted-sm">View all →</a>
-      </div>
-      <div class="me-card-body p-0">
-        {% if upcoming %}
-        <table class="me-table">
-          <thead>
-            <tr><th>Event</th><th>Date</th><th>Venue</th><th>Status</th></tr>
-          </thead>
-          <tbody>
-            {% for e in upcoming %}
-            <tr>
-              <td>
-                <a href="{{ url_for('events.detail', event_id=e.id) }}" style="font-weight:600;color:#1A1A2E;">
-                  {{ e.name }}
-                </a>
-                <div class="text-muted-sm">{{ e.client.full_name }}</div>
-              </td>
-              <td>
-                <strong>{{ e.event_date|dateformat }}</strong>
-                {% if e.days_until == 0 %}
-                  <span class="badge bg-danger ms-1">TODAY</span>
-                {% elif e.days_until <= 3 %}
-                  <span class="badge bg-warning text-dark ms-1">{{ e.days_until }}d</span>
-                {% else %}
-                  <span class="text-muted-sm ms-1">{{ e.days_until }}d</span>
-                {% endif %}
-              </td>
-              <td class="text-muted-sm">{{ e.venue_name or '—' }}</td>
-              <td><span class="badge bg-{{ e.status_color }}">{{ e.status|replace('_',' ')|title }}</span></td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-        {% else %}
-        <div class="p-4 text-center text-muted-sm">No upcoming events in the next 30 days 🎉</div>
-        {% endif %}
-      </div>
+  <div class="me-kpi">
+    <div class="me-kpi-icon me-kpi-icon-amber">
+      <i data-lucide="calendar-days"></i>
+    </div>
+    <div>
+      <div class="me-kpi-value">{{ total_events }}</div>
+      <div class="me-kpi-label">Total Events</div>
     </div>
   </div>
 
-  {# Overdue Tasks #}
-  <div class="col-lg-4">
-    <div class="me-card h-100">
-      <div class="me-card-header">
-        <h5>⚠️ Overdue Tasks</h5>
-      </div>
-      <div class="me-card-body p-0">
-        {% if overdue_tasks %}
-        <ul class="list-unstyled mb-0">
-          {% for t in overdue_tasks %}
-          <li style="padding:10px 16px;border-bottom:1px solid #F0F2F7;">
-            <div style="font-weight:600;font-size:.875rem;">{{ t.title }}</div>
-            <div class="text-muted-sm">
-              {{ t.event.name }} · Due {{ t.due_date|dateformat }}
-              {% if t.assigned_user %} · {{ t.assigned_user.name }}{% endif %}
-            </div>
-          </li>
-          {% endfor %}
-        </ul>
-        {% else %}
-        <div class="p-3 text-center text-muted-sm">No overdue tasks ✅</div>
-        {% endif %}
-      </div>
+  <div class="me-kpi">
+    <div class="me-kpi-icon me-kpi-icon-blue">
+      <i data-lucide="zap"></i>
+    </div>
+    <div>
+      <div class="me-kpi-value">{{ active_events }}</div>
+      <div class="me-kpi-label">Active Events</div>
+    </div>
+  </div>
+
+  <div class="me-kpi">
+    <div class="me-kpi-icon me-kpi-icon-green">
+      <i data-lucide="users"></i>
+    </div>
+    <div>
+      <div class="me-kpi-value">{{ total_clients }}</div>
+      <div class="me-kpi-label">Total Clients</div>
+    </div>
+  </div>
+
+  <div class="me-kpi">
+    <div class="me-kpi-icon me-kpi-icon-red">
+      <i data-lucide="inbox"></i>
+    </div>
+    <div>
+      <div class="me-kpi-value">{{ new_inquiries }}</div>
+      <div class="me-kpi-label">New Inquiries</div>
     </div>
   </div>
 
 </div>
 
-{# ── Row 3: Recent Inquiries + Overdue Payments + Low Stock ──── #}
-<div class="row g-4">
+{# ══════════════════════════════════════════════════════════════
+   ROW 2: Upcoming Events (wide) + Overdue Tasks (narrow)
+══════════════════════════════════════════════════════════════ #}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
 
-  {# Recent Inquiries #}
-  <div class="col-lg-4">
-    <div class="me-card h-100">
-      <div class="me-card-header">
-        <h5>🆕 Recent Inquiries</h5>
-        <a href="{{ url_for('clients.list_clients') }}" class="text-muted-sm">View all →</a>
+  {# ── Upcoming Events ── #}
+  <div class="lg:col-span-2 me-card flex flex-col">
+    <div class="me-card-header">
+      <div class="flex items-center gap-2">
+        <i data-lucide="calendar-clock" class="w-4 h-4 text-amber"></i>
+        <h5 class="me-card-title">Upcoming Events</h5>
+        <span class="me-badge me-badge-slate">Next 30 days</span>
       </div>
-      <div class="me-card-body p-0">
-        {% if recent_clients %}
-        <table class="me-table">
-          <thead><tr><th>Client</th><th>Stage</th><th>Date</th></tr></thead>
-          <tbody>
-            {% for c in recent_clients %}
-            <tr>
-              <td>
-                <a href="{{ url_for('clients.detail', client_id=c.id) }}" style="font-weight:600;color:#1A1A2E;">
-                  {{ c.full_name }}
-                </a>
-              </td>
-              <td><span class="badge bg-{{ c.stage_color }}">{{ c.stage_label }}</span></td>
-              <td class="text-muted-sm">{{ c.inquiry_date|dateformat }}</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-        {% else %}
-        <div class="p-3 text-center text-muted-sm">No recent inquiries</div>
-        {% endif %}
-      </div>
+      <a href="{{ url_for('events.list_events') }}"
+         class="text-[12px] font-semibold text-slate-400 hover:text-amber
+                flex items-center gap-1 transition-colors duration-150">
+        View all
+        <i data-lucide="arrow-right" class="w-3 h-3"></i>
+      </a>
     </div>
-  </div>
 
-  {# Overdue Payments #}
-  <div class="col-lg-4">
-    <div class="me-card h-100">
-      <div class="me-card-header">
-        <h5>💸 Overdue Payments</h5>
-      </div>
-      <div class="me-card-body p-0">
-        {% if overdue_payments %}
-        <ul class="list-unstyled mb-0">
-          {% for p in overdue_payments %}
-          <li style="padding:10px 16px;border-bottom:1px solid #F0F2F7;">
-            <div style="font-weight:600;font-size:.875rem;">{{ p.label or p.payment_type|title }}</div>
-            <div class="text-muted-sm d-flex justify-content-between">
-              <span>{{ p.event.name }}</span>
-              <strong style="color:#F56565;">{{ p.amount|peso }}</strong>
-            </div>
-            <div class="text-muted-sm">Due {{ p.due_date|dateformat }}</div>
-          </li>
+    <div class="me-table-wrap flex-1">
+      {% if upcoming %}
+      <table class="me-table">
+        <thead>
+          <tr>
+            <th>Event</th>
+            <th>Date</th>
+            <th>Venue</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for e in upcoming %}
+          <tr>
+            <td>
+              <a href="{{ url_for('events.detail', event_id=e.id) }}"
+                 class="font-semibold text-slate-900 hover:text-amber transition-colors">
+                {{ e.name }}
+              </a>
+              <div class="cell-muted mt-0.5">{{ e.client.full_name }}</div>
+            </td>
+            <td>
+              <span class="font-semibold">{{ e.event_date|dateformat }}</span>
+              {% if e.days_until == 0 %}
+                <span class="me-badge me-badge-red ml-1.5">TODAY</span>
+              {% elif e.days_until <= 3 %}
+                <span class="me-badge me-badge-yellow ml-1.5">{{ e.days_until }}d</span>
+              {% else %}
+                <div class="cell-muted">{{ e.days_until }}d away</div>
+              {% endif %}
+            </td>
+            <td class="cell-muted">{{ e.venue_name or '—' }}</td>
+            <td>
+              <span class="me-badge me-badge-{{ e.status_color }}">
+                {{ e.status|replace('_',' ')|title }}
+              </span>
+            </td>
+          </tr>
           {% endfor %}
-        </ul>
-        {% else %}
-        <div class="p-3 text-center text-muted-sm">No overdue payments ✅</div>
-        {% endif %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="me-empty">
+        <i data-lucide="calendar-check" class="me-empty-icon"></i>
+        <div class="me-empty-title">No upcoming events</div>
+        <p class="me-empty-desc">Nothing scheduled in the next 30 days.</p>
       </div>
+      {% endif %}
     </div>
   </div>
 
-  {# Low Stock Inventory #}
-  <div class="col-lg-4">
-    <div class="me-card h-100">
-      <div class="me-card-header">
-        <h5>📦 Low Stock Inventory</h5>
-        <a href="{{ url_for('inventory.list_items') }}" class="text-muted-sm">View all →</a>
+  {# ── Overdue Tasks ── #}
+  <div class="me-card flex flex-col">
+    <div class="me-card-header">
+      <div class="flex items-center gap-2">
+        <i data-lucide="circle-alert" class="w-4 h-4 text-red-500"></i>
+        <h5 class="me-card-title">Overdue Tasks</h5>
       </div>
-      <div class="me-card-body p-0">
-        {% if low_stock %}
-        <table class="me-table">
-          <thead><tr><th>Item</th><th>Category</th><th>Available</th></tr></thead>
-          <tbody>
-            {% for item in low_stock %}
-            <tr>
-              <td>
-                <a href="{{ url_for('inventory.detail', item_id=item.id) }}" style="font-weight:600;color:#1A1A2E;">
-                  {{ item.name }}
-                </a>
-              </td>
-              <td class="text-muted-sm">{{ item.category|title }}</td>
-              <td>
-                <span class="badge {{ 'bg-danger' if item.available_qty == 0 else 'bg-warning text-dark' }}">
-                  {{ item.available_qty }} left
-                </span>
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-        {% else %}
-        <div class="p-3 text-center text-muted-sm">All items sufficiently stocked ✅</div>
-        {% endif %}
+      {% if overdue_tasks %}
+      <span class="me-badge me-badge-red">{{ overdue_tasks|length }}</span>
+      {% endif %}
+    </div>
+
+    <div class="flex-1 overflow-y-auto">
+      {% if overdue_tasks %}
+      <ul class="divide-y divide-slate-100">
+        {% for t in overdue_tasks %}
+        <li class="px-5 py-3 hover:bg-slate-50 transition-colors duration-100">
+          <div class="font-semibold text-[13px] text-slate-800 leading-tight">
+            {{ t.title }}
+          </div>
+          <div class="flex items-center gap-1.5 mt-1 text-[11px] text-slate-400 font-medium">
+            <i data-lucide="calendar" class="w-3 h-3"></i>
+            {{ t.event.name }}
+            &middot;
+            <span class="text-red-500">{{ t.due_date|dateformat }}</span>
+            {% if t.assigned_user %}
+            &middot; {{ t.assigned_user.name }}
+            {% endif %}
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <div class="me-empty py-10">
+        <i data-lucide="circle-check-big" class="me-empty-icon text-green-300"></i>
+        <div class="me-empty-title text-green-600">All caught up</div>
+        <p class="me-empty-desc">No overdue tasks.</p>
       </div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+
+{# ══════════════════════════════════════════════════════════════
+   ROW 3: Recent Inquiries / Overdue Payments / Low Stock
+══════════════════════════════════════════════════════════════ #}
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+  {# ── Recent Inquiries ── #}
+  <div class="me-card flex flex-col">
+    <div class="me-card-header">
+      <div class="flex items-center gap-2">
+        <i data-lucide="user-plus" class="w-4 h-4 text-blue-500"></i>
+        <h5 class="me-card-title">Recent Inquiries</h5>
+      </div>
+      <a href="{{ url_for('clients.list_clients') }}"
+         class="text-[12px] font-semibold text-slate-400 hover:text-amber
+                flex items-center gap-1 transition-colors duration-150">
+        All
+        <i data-lucide="arrow-right" class="w-3 h-3"></i>
+      </a>
+    </div>
+
+    <div class="flex-1">
+      {% if recent_clients %}
+      <table class="me-table">
+        <thead>
+          <tr>
+            <th>Client</th>
+            <th>Stage</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in recent_clients %}
+          <tr>
+            <td>
+              <a href="{{ url_for('clients.detail', client_id=c.id) }}"
+                 class="font-semibold text-slate-900 hover:text-amber transition-colors text-[13px]">
+                {{ c.full_name }}
+              </a>
+            </td>
+            <td>
+              <span class="me-badge me-badge-{{ c.stage_color }}">{{ c.stage_label }}</span>
+            </td>
+            <td class="cell-muted">{{ c.inquiry_date|dateformat }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="me-empty py-10">
+        <i data-lucide="users" class="me-empty-icon"></i>
+        <div class="me-empty-title">No recent inquiries</div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  {# ── Overdue Payments ── #}
+  <div class="me-card flex flex-col">
+    <div class="me-card-header">
+      <div class="flex items-center gap-2">
+        <i data-lucide="circle-dollar-sign" class="w-4 h-4 text-red-500"></i>
+        <h5 class="me-card-title">Overdue Payments</h5>
+      </div>
+      {% if overdue_payments %}
+      <span class="me-badge me-badge-red">{{ overdue_payments|length }}</span>
+      {% endif %}
+    </div>
+
+    <div class="flex-1">
+      {% if overdue_payments %}
+      <ul class="divide-y divide-slate-100">
+        {% for p in overdue_payments %}
+        <li class="px-5 py-3 hover:bg-slate-50 transition-colors duration-100">
+          <div class="flex items-start justify-between gap-2">
+            <div class="font-semibold text-[13px] text-slate-800 leading-tight">
+              {{ p.label or p.payment_type|title }}
+            </div>
+            <span class="font-bold text-red-500 text-[13px] flex-shrink-0">
+              {{ p.amount|peso }}
+            </span>
+          </div>
+          <div class="flex items-center gap-1.5 mt-1 text-[11px] text-slate-400 font-medium">
+            <i data-lucide="building-2" class="w-3 h-3"></i>
+            {{ p.event.name }}
+            &middot;
+            Due {{ p.due_date|dateformat }}
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <div class="me-empty py-10">
+        <i data-lucide="circle-check-big" class="me-empty-icon text-green-300"></i>
+        <div class="me-empty-title text-green-600">No overdue payments</div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  {# ── Low Stock Inventory ── #}
+  <div class="me-card flex flex-col">
+    <div class="me-card-header">
+      <div class="flex items-center gap-2">
+        <i data-lucide="package-open" class="w-4 h-4 text-amber"></i>
+        <h5 class="me-card-title">Low Stock</h5>
+      </div>
+      <a href="{{ url_for('inventory.list_items') }}"
+         class="text-[12px] font-semibold text-slate-400 hover:text-amber
+                flex items-center gap-1 transition-colors duration-150">
+        All
+        <i data-lucide="arrow-right" class="w-3 h-3"></i>
+      </a>
+    </div>
+
+    <div class="flex-1">
+      {% if low_stock %}
+      <table class="me-table">
+        <thead>
+          <tr><th>Item</th><th>Category</th><th>Left</th></tr>
+        </thead>
+        <tbody>
+          {% for item in low_stock %}
+          <tr>
+            <td>
+              <a href="{{ url_for('inventory.detail', item_id=item.id) }}"
+                 class="font-semibold text-slate-900 hover:text-amber transition-colors text-[13px]">
+                {{ item.name }}
+              </a>
+            </td>
+            <td class="cell-muted">{{ item.category|title }}</td>
+            <td>
+              <span class="me-badge {{ 'me-badge-red' if item.available_qty == 0 else 'me-badge-yellow' }}">
+                {{ item.available_qty }}
+              </span>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="me-empty py-10">
+        <i data-lucide="package-check" class="me-empty-icon text-green-300"></i>
+        <div class="me-empty-title text-green-600">Stock is healthy</div>
+      </div>
+      {% endif %}
     </div>
   </div>
 
