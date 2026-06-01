@@ -1,66 +1,114 @@
 {% extends "base.html" %}
-{% block title %}Login{% endblock %}
+{% block title %}Sign In{% endblock %}
 
 {% block auth_content %}
-<div style="min-height:100vh;background:linear-gradient(135deg,#1A1A2E 0%,#16213E 50%,#0F3460 100%);
-     display:flex;align-items:center;justify-content:center;padding:20px;">
-  
-  <div style="width:100%;max-width:400px;">
+<div class="auth-layout">
 
-    <!-- Logo and Header -->
-    <div class="text-center mb-4">
-      <div style="font-size:2.2rem;font-weight:900;color:#fff;letter-spacing:1px;">⚡ Metro Events</div>
-      <div style="color:#C9A84C;font-style:italic;font-size:.9rem;margin-top:4px;">Creating memories.</div>
-    </div>
-
-    <!-- Login Card -->
-    <div style="background:#fff;border-radius:16px;padding:32px;box-shadow:0 20px 60px rgba(0,0,0,.4); position: relative;">
-      
-      <!-- 🔙 THE BACK TO WEBSITE BUTTON -->
-      <a href="/" style="display: inline-block; margin-bottom: 24px; color: #8896A5; text-decoration: none; font-size: 0.85rem; font-weight: 600; transition: color 0.2s;" 
-         onmouseover="this.style.color='#1A1A2E'" 
-         onmouseout="this.style.color='#8896A5'">
-          ← Back to Website
+  {# ── LEFT: Visual Panel ──────────────────────────────────── #}
+  <div class="auth-panel-visual">
+    <div class="auth-panel-visual-content">
+      {# Brand #}
+      <a href="{{ url_for('public.index') }}" style="display:inline-flex;align-items:center;gap:10px;text-decoration:none;margin-bottom:48px;">
+        <div style="width:34px;height:34px;background:linear-gradient(135deg,var(--brand),var(--brand-dark));border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+        </div>
+        <span style="font-size:17px;font-weight:700;color:#fff;">{{ APP_NAME }}</span>
       </a>
 
-      <h5 style="font-weight:800;color:#1A1A2E;margin-bottom:22px;text-align:center;">Welcome back 👋</h5>
+      {# Headline #}
+      <div style="margin-bottom:40px;">
+        <div style="font-family:'DM Sans',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:var(--brand);margin-bottom:12px;">Admin Portal</div>
+        <h2 style="font-family:'Cormorant Garamond',Georgia,serif;font-size:clamp(2rem,3vw,2.8rem);font-weight:700;color:#fff;margin:0 0 14px;letter-spacing:-0.03em;line-height:1.15;">Every great event<br><em style="color:var(--brand);font-style:normal;">starts here.</em></h2>
+        <p style="font-family:'DM Sans',sans-serif;font-size:15px;color:rgba(255,255,255,0.55);line-height:1.7;max-width:320px;margin:0;">One workspace per event. Full visibility for your team and your clients.</p>
+      </div>
 
-      {% with messages = get_flashed_messages(with_categories=true) %}
-        {% for cat, msg in messages %}
-          <div class="me-alert me-alert-{{ 'danger' if cat=='error' else cat }}">{{ msg }}</div>
+      {# Feature list #}
+      <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:48px;">
+        {% for label in ['Complete event workspaces', 'Real-time task tracking', 'Client portal access', 'Inventory management'] %}
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div style="width:22px;height:22px;background:rgba(212,168,67,0.12);border:1px solid rgba(212,168,67,0.3);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <span style="font-family:'DM Sans',sans-serif;font-size:13.5px;color:rgba(255,255,255,0.65);">{{ label }}</span>
+        </div>
         {% endfor %}
-      {% endwith %}
-
-      <form method="POST">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-
-        <div class="mb-3">
-          <label class="me-form-label">Email Address</label>
-          <input type="email" name="email" class="me-form-control" placeholder="you@metroevents.ph" required autofocus />
-        </div>
-
-        <div class="mb-4">
-          <label class="me-form-label">Password</label>
-          <input type="password" name="password" class="me-form-control" placeholder="••••••••" required />
-        </div>
-
-        <button type="submit" class="btn-gold w-100 justify-content-center" style="padding:12px;">
-          Log In to Metro Events
-        </button>
-      </form>
-
-      <!-- Footer Links -->
-      <div class="text-center mt-4 pt-3" style="border-top: 1px solid #eee;">
-          <p style="margin-bottom: 5px; color: #666; font-size: 0.85rem;">New to the system?</p>
-          <a href="{{ url_for('auth.register') }}" style="color: #C9A84C; text-decoration: none; font-weight: 700; font-size: 0.9rem;">
-              ✨ Create Account
-          </a>
       </div>
     </div>
 
-    <div class="text-center mt-3" style="color:rgba(255,255,255,.4);font-size:.78rem;">
-      Metro Events Management System v1.0
+    {# Testimonial #}
+    <div class="auth-visual-testimonial">
+      <div class="auth-visual-quote">"Metro Events made our wedding flawless. The team workspace kept everything in sync."</div>
+      <div class="auth-visual-author"><strong>Maria Santos</strong> — Bride, June 2025</div>
     </div>
   </div>
+
+  {# ── RIGHT: Form Panel ───────────────────────────────────── #}
+  <div class="auth-panel-form">
+
+    <a href="{{ url_for('public.index') }}" class="auth-back-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+      Back to website
+    </a>
+
+    <div style="max-width:400px;width:100%;">
+
+      <div class="auth-form-header">
+        <span class="auth-form-eyebrow">Team Login</span>
+        <h1 class="auth-form-h1">Welcome back</h1>
+        <p class="auth-form-sub">Don't have an account? <a href="{{ url_for('auth.register') }}">Create one</a></p>
+      </div>
+
+      {# Flash messages #}
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for cat, msg in messages %}
+          <div class="me-alert me-alert-{{ 'danger' if cat in ['error','danger'] else cat }}" style="margin-bottom:16px;">
+            <span>{{ msg }}</span>
+          </div>
+        {% endfor %}
+      {% endwith %}
+
+      <form method="POST" action="{{ url_for('auth.login') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+
+        <div class="auth-form-group">
+          <label class="auth-label" for="email">Email address</label>
+          <input type="email" id="email" name="email" class="auth-input" placeholder="you@metroevents.com" required autocomplete="email" />
+        </div>
+
+        <div class="auth-form-group">
+          <label class="auth-label" for="password" style="display:flex;justify-content:space-between;">
+            <span>Password</span>
+            <a href="#" style="font-weight:500;color:var(--brand-dark);font-size:12px;">Forgot password?</a>
+          </label>
+          <div style="position:relative;">
+            <input type="password" id="password" name="password" class="auth-input" placeholder="••••••••" required autocomplete="current-password" />
+            <button type="button" onclick="togglePwd('password', this)" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:hsl(220,9%,62%);padding:0;display:flex;align-items:center;">
+              <svg id="eyeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-auth">Sign in to Dashboard</button>
+      </form>
+
+      <div class="auth-divider">or</div>
+
+      <a href="{{ url_for('client_auth.login') }}" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border:1.5px solid hsl(220,13%,88%);border-radius:var(--r-sm);font-family:'DM Sans',sans-serif;font-size:13.5px;font-weight:600;color:hsl(220,14%,42%);text-decoration:none;transition:all 0.18s;" onmouseover="this.style.borderColor='var(--brand)';this.style.color='var(--brand-dark)'" onmouseout="this.style.borderColor='hsl(220,13%,88%)';this.style.color='hsl(220,14%,42%)'">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        Sign in as a Client instead
+      </a>
+
+    </div>
+  </div>
+
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function togglePwd(id, btn) {
+  const input = document.getElementById(id);
+  input.type = input.type === 'password' ? 'text' : 'password';
+}
+</script>
 {% endblock %}
