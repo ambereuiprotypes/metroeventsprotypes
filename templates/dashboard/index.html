@@ -1,328 +1,306 @@
 {% extends "base.html" %}
 {% block title %}Dashboard{% endblock %}
-{% block page_title %}Dashboard{% endblock %}
-{% block breadcrumb %}Home / Overview{% endblock %}
+{% block page_title %}Workspace Overview{% endblock %}
+{% block breadcrumb %}Good {{ "morning" if today.hour < 12 else ("afternoon" if today.hour < 17 else "evening") }}, {{ current_user.name.split()[0] }} — here's your day.{% endblock %}
 
 {% block topbar_actions %}
-  <a href="{{ url_for('events.new_event') }}" class="me-btn me-btn-primary">
-    <i data-lucide="plus" class="w-4 h-4"></i>
+  <a href="{{ url_for('events.new_event') }}" class="btn-me btn-gold">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
     New Event
   </a>
 {% endblock %}
 
 {% block content %}
 
-{# ══════════════════════════════════════════════════════════════
-   KPI METRIC CARDS
-══════════════════════════════════════════════════════════════ #}
-<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+{# ── KPI GRID ──────────────────────────────────────────────── #}
+<div class="kpi-grid">
 
-  <div class="me-kpi">
-    <div class="me-kpi-icon me-kpi-icon-amber">
-      <i data-lucide="calendar-days"></i>
+  <div class="kpi-card gold">
+    <div class="kpi-icon gold">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
     </div>
     <div>
-      <div class="me-kpi-value">{{ total_events }}</div>
-      <div class="me-kpi-label">Total Events</div>
-    </div>
-  </div>
-
-  <div class="me-kpi">
-    <div class="me-kpi-icon me-kpi-icon-blue">
-      <i data-lucide="zap"></i>
-    </div>
-    <div>
-      <div class="me-kpi-value">{{ active_events }}</div>
-      <div class="me-kpi-label">Active Events</div>
-    </div>
-  </div>
-
-  <div class="me-kpi">
-    <div class="me-kpi-icon me-kpi-icon-green">
-      <i data-lucide="users"></i>
-    </div>
-    <div>
-      <div class="me-kpi-value">{{ total_clients }}</div>
-      <div class="me-kpi-label">Total Clients</div>
-    </div>
-  </div>
-
-  <div class="me-kpi">
-    <div class="me-kpi-icon me-kpi-icon-red">
-      <i data-lucide="inbox"></i>
-    </div>
-    <div>
-      <div class="me-kpi-value">{{ new_inquiries }}</div>
-      <div class="me-kpi-label">New Inquiries</div>
-    </div>
-  </div>
-
-</div>
-
-{# ══════════════════════════════════════════════════════════════
-   ROW 2: Upcoming Events (wide) + Overdue Tasks (narrow)
-══════════════════════════════════════════════════════════════ #}
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
-
-  {# ── Upcoming Events ── #}
-  <div class="lg:col-span-2 me-card flex flex-col">
-    <div class="me-card-header">
-      <div class="flex items-center gap-2">
-        <i data-lucide="calendar-clock" class="w-4 h-4 text-amber"></i>
-        <h5 class="me-card-title">Upcoming Events</h5>
-        <span class="me-badge me-badge-slate">Next 30 days</span>
+      <div class="kpi-value">{{ total_events }}</div>
+      <div class="kpi-label">Total Events</div>
+      <div class="kpi-delta up">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="18 15 12 9 6 15"/></svg>
+        All time
       </div>
-      <a href="{{ url_for('events.list_events') }}"
-         class="text-[12px] font-semibold text-slate-400 hover:text-amber
-                flex items-center gap-1 transition-colors duration-150">
-        View all
-        <i data-lucide="arrow-right" class="w-3 h-3"></i>
-      </a>
     </div>
+  </div>
 
-    <div class="me-table-wrap flex-1">
-      {% if upcoming %}
-      <table class="me-table">
-        <thead>
-          <tr>
-            <th>Event</th>
-            <th>Date</th>
-            <th>Venue</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for e in upcoming %}
-          <tr>
-            <td>
-              <a href="{{ url_for('events.detail', event_id=e.id) }}"
-                 class="font-semibold text-slate-900 hover:text-amber transition-colors">
-                {{ e.name }}
-              </a>
-              <div class="cell-muted mt-0.5">{{ e.client.full_name }}</div>
-            </td>
-            <td>
-              <span class="font-semibold">{{ e.event_date|dateformat }}</span>
-              {% if e.days_until == 0 %}
-                <span class="me-badge me-badge-red ml-1.5">TODAY</span>
-              {% elif e.days_until <= 3 %}
-                <span class="me-badge me-badge-yellow ml-1.5">{{ e.days_until }}d</span>
-              {% else %}
-                <div class="cell-muted">{{ e.days_until }}d away</div>
-              {% endif %}
-            </td>
-            <td class="cell-muted">{{ e.venue_name or '—' }}</td>
-            <td>
-              <span class="me-badge me-badge-{{ e.status_color }}">
-                {{ e.status|replace('_',' ')|title }}
-              </span>
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+  <div class="kpi-card blue">
+    <div class="kpi-icon blue">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+    </div>
+    <div>
+      <div class="kpi-value">{{ active_events }}</div>
+      <div class="kpi-label">Active Events</div>
+      <div class="kpi-delta up">In pipeline</div>
+    </div>
+  </div>
+
+  <div class="kpi-card green">
+    <div class="kpi-icon green">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    </div>
+    <div>
+      <div class="kpi-value">{{ total_clients }}</div>
+      <div class="kpi-label">Total Clients</div>
+      <div class="kpi-delta up">In CRM</div>
+    </div>
+  </div>
+
+  <div class="kpi-card red">
+    <div class="kpi-icon red">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 17H2a3 3 0 0 0 3-3V9a7 7 0 0 1 14 0v5a3 3 0 0 0 3 3z"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+    </div>
+    <div>
+      <div class="kpi-value">{{ new_inquiries }}</div>
+      <div class="kpi-label">New Inquiries</div>
+      {% if new_inquiries > 0 %}
+        <div class="kpi-delta down">Needs action</div>
       {% else %}
-      <div class="me-empty">
-        <i data-lucide="calendar-check" class="me-empty-icon"></i>
-        <div class="me-empty-title">No upcoming events</div>
-        <p class="me-empty-desc">Nothing scheduled in the next 30 days.</p>
-      </div>
-      {% endif %}
-    </div>
-  </div>
-
-  {# ── Overdue Tasks ── #}
-  <div class="me-card flex flex-col">
-    <div class="me-card-header">
-      <div class="flex items-center gap-2">
-        <i data-lucide="circle-alert" class="w-4 h-4 text-red-500"></i>
-        <h5 class="me-card-title">Overdue Tasks</h5>
-      </div>
-      {% if overdue_tasks %}
-      <span class="me-badge me-badge-red">{{ overdue_tasks|length }}</span>
-      {% endif %}
-    </div>
-
-    <div class="flex-1 overflow-y-auto">
-      {% if overdue_tasks %}
-      <ul class="divide-y divide-slate-100">
-        {% for t in overdue_tasks %}
-        <li class="px-5 py-3 hover:bg-slate-50 transition-colors duration-100">
-          <div class="font-semibold text-[13px] text-slate-800 leading-tight">
-            {{ t.title }}
-          </div>
-          <div class="flex items-center gap-1.5 mt-1 text-[11px] text-slate-400 font-medium">
-            <i data-lucide="calendar" class="w-3 h-3"></i>
-            {{ t.event.name }}
-            &middot;
-            <span class="text-red-500">{{ t.due_date|dateformat }}</span>
-            {% if t.assigned_user %}
-            &middot; {{ t.assigned_user.name }}
-            {% endif %}
-          </div>
-        </li>
-        {% endfor %}
-      </ul>
-      {% else %}
-      <div class="me-empty py-10">
-        <i data-lucide="circle-check-big" class="me-empty-icon text-green-300"></i>
-        <div class="me-empty-title text-green-600">All caught up</div>
-        <p class="me-empty-desc">No overdue tasks.</p>
-      </div>
+        <div class="kpi-delta up">All clear</div>
       {% endif %}
     </div>
   </div>
 
 </div>
+{# END KPI GRID #}
 
-{# ══════════════════════════════════════════════════════════════
-   ROW 3: Recent Inquiries / Overdue Payments / Low Stock
-══════════════════════════════════════════════════════════════ #}
-<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+{# ── ROW: UPCOMING EVENTS + OVERDUE TASKS ──────────────────── #}
+<div class="row g-4 mb-4">
 
-  {# ── Recent Inquiries ── #}
-  <div class="me-card flex flex-col">
-    <div class="me-card-header">
-      <div class="flex items-center gap-2">
-        <i data-lucide="user-plus" class="w-4 h-4 text-blue-500"></i>
-        <h5 class="me-card-title">Recent Inquiries</h5>
+  {# Upcoming Events Table #}
+  <div class="col-lg-8">
+    <div class="me-card h-100">
+      <div class="me-card-header">
+        <h5>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          Upcoming Events (Next 30 Days)
+        </h5>
+        <a href="{{ url_for('events.list_events') }}" class="btn-me btn-outline-me btn-sm-me">View all</a>
       </div>
-      <a href="{{ url_for('clients.list_clients') }}"
-         class="text-[12px] font-semibold text-slate-400 hover:text-amber
-                flex items-center gap-1 transition-colors duration-150">
-        All
-        <i data-lucide="arrow-right" class="w-3 h-3"></i>
-      </a>
-    </div>
-
-    <div class="flex-1">
-      {% if recent_clients %}
-      <table class="me-table">
-        <thead>
-          <tr>
-            <th>Client</th>
-            <th>Stage</th>
-            <th>Date</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for c in recent_clients %}
-          <tr>
-            <td>
-              <a href="{{ url_for('clients.detail', client_id=c.id) }}"
-                 class="font-semibold text-slate-900 hover:text-amber transition-colors text-[13px]">
-                {{ c.full_name }}
-              </a>
-            </td>
-            <td>
-              <span class="me-badge me-badge-{{ c.stage_color }}">{{ c.stage_label }}</span>
-            </td>
-            <td class="cell-muted">{{ c.inquiry_date|dateformat }}</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-      {% else %}
-      <div class="me-empty py-10">
-        <i data-lucide="users" class="me-empty-icon"></i>
-        <div class="me-empty-title">No recent inquiries</div>
+      <div class="me-card-body p-0">
+        {% if upcoming %}
+        <table class="me-table">
+          <thead>
+            <tr>
+              <th>Event</th>
+              <th>Date</th>
+              <th>Venue</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for e in upcoming %}
+            <tr>
+              <td>
+                <div class="event-name">{{ e.name }}</div>
+                <div class="event-sub">{{ e.client.full_name }}</div>
+              </td>
+              <td>
+                <strong style="font-size:13px;">{{ e.event_date | dateformat }}</strong>
+                {% if e.days_until == 0 %}
+                  <div><span class="overdue-dot" style="background:hsl(0,72%,45%);color:#fff;border:none;margin-top:3px;">TODAY</span></div>
+                {% elif e.days_until <= 3 %}
+                  <div><span class="due-soon-dot" style="margin-top:3px;">{{ e.days_until }}d away</span></div>
+                {% else %}
+                  <div class="text-muted-sm">{{ e.days_until }} days</div>
+                {% endif %}
+              </td>
+              <td class="text-primary-sm">{{ e.venue_name or '—' }}</td>
+              <td>
+                <span class="status-badge {{ e.status }}">{{ e.status.replace('_',' ').title() }}</span>
+              </td>
+              <td>
+                <a href="{{ url_for('events.detail', event_id=e.id) }}" class="btn-icon" title="View workspace">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <div class="me-empty">
+          <div class="me-empty-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          </div>
+          <h6>No upcoming events</h6>
+          <p>Events in the next 30 days will appear here.</p>
+          <a href="{{ url_for('events.new_event') }}" class="btn-me btn-gold btn-sm-me">Create event</a>
+        </div>
+        {% endif %}
       </div>
-      {% endif %}
     </div>
   </div>
 
-  {# ── Overdue Payments ── #}
-  <div class="me-card flex flex-col">
-    <div class="me-card-header">
-      <div class="flex items-center gap-2">
-        <i data-lucide="circle-dollar-sign" class="w-4 h-4 text-red-500"></i>
-        <h5 class="me-card-title">Overdue Payments</h5>
+  {# Overdue Tasks #}
+  <div class="col-lg-4">
+    <div class="me-card h-100">
+      <div class="me-card-header">
+        <h6>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          Overdue Tasks
+        </h6>
+        {% if overdue_tasks %}
+          <span class="tag" style="background:var(--danger-bg);color:hsl(0,62%,40%);border-color:hsl(0,52%,80%);">{{ overdue_tasks|length }}</span>
+        {% endif %}
       </div>
-      {% if overdue_payments %}
-      <span class="me-badge me-badge-red">{{ overdue_payments|length }}</span>
-      {% endif %}
-    </div>
-
-    <div class="flex-1">
-      {% if overdue_payments %}
-      <ul class="divide-y divide-slate-100">
-        {% for p in overdue_payments %}
-        <li class="px-5 py-3 hover:bg-slate-50 transition-colors duration-100">
-          <div class="flex items-start justify-between gap-2">
-            <div class="font-semibold text-[13px] text-slate-800 leading-tight">
-              {{ p.label or p.payment_type|title }}
+      <div class="me-card-body p-0">
+        {% if overdue_tasks %}
+          {% for task in overdue_tasks %}
+          <div style="padding: 12px 18px; border-bottom: 1px solid var(--admin-border);" class="{{ 'bg-opacity-5' if loop.last }}">
+            <div style="font-size:13px;font-weight:600;color:var(--admin-text);line-height:1.3;margin-bottom:4px;">
+              {{ task.title }}
             </div>
-            <span class="font-bold text-red-500 text-[13px] flex-shrink-0">
-              {{ p.amount|peso }}
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span class="overdue-dot">
+                <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
+                Due {{ task.due_date | dateformat }}
+              </span>
+              {% if task.event %}
+                <span class="text-muted-sm">{{ task.event.name }}</span>
+              {% endif %}
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="me-empty">
+            <div class="me-empty-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <h6>All caught up!</h6>
+            <p>No overdue tasks right now.</p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+</div>
+{# END ROW 2 #}
+
+{# ── ROW: LOW STOCK + RECENT CLIENTS + OVERDUE PAYMENTS ─────── #}
+<div class="row g-4">
+
+  {# Low Stock Items #}
+  <div class="col-lg-4">
+    <div class="me-card h-100">
+      <div class="me-card-header">
+        <h6>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+          Low Stock Alert
+        </h6>
+        {% if low_stock %}
+          <span class="tag gold">{{ low_stock|length }} items</span>
+        {% endif %}
+      </div>
+      <div class="me-card-body p-0">
+        {% if low_stock %}
+          {% for item in low_stock %}
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:11px 18px;border-bottom:1px solid var(--admin-border);">
+            <div style="font-size:13px;font-weight:500;color:var(--admin-text);">{{ item.name }}</div>
+            <span class="tag {{ 'gray' if item.available_qty > 0 else 'red' }}" style="{{ 'background:var(--danger-bg);color:hsl(0,62%,40%);border-color:hsl(0,52%,80%);' if item.available_qty == 0 }}">
+              {{ item.available_qty }} left
             </span>
           </div>
-          <div class="flex items-center gap-1.5 mt-1 text-[11px] text-slate-400 font-medium">
-            <i data-lucide="building-2" class="w-3 h-3"></i>
-            {{ p.event.name }}
-            &middot;
-            Due {{ p.due_date|dateformat }}
+          {% endfor %}
+          <div style="padding:12px 18px;">
+            <a href="{{ url_for('inventory.list_items') }}" class="btn-me btn-outline-me btn-sm-me" style="width:100%;justify-content:center;">
+              View Inventory
+            </a>
           </div>
-        </li>
-        {% endfor %}
-      </ul>
-      {% else %}
-      <div class="me-empty py-10">
-        <i data-lucide="circle-check-big" class="me-empty-icon text-green-300"></i>
-        <div class="me-empty-title text-green-600">No overdue payments</div>
+        {% else %}
+          <div class="me-empty">
+            <div class="me-empty-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+            </div>
+            <h6>Stock levels good</h6>
+            <p>No low-stock items to report.</p>
+          </div>
+        {% endif %}
       </div>
-      {% endif %}
     </div>
   </div>
 
-  {# ── Low Stock Inventory ── #}
-  <div class="me-card flex flex-col">
-    <div class="me-card-header">
-      <div class="flex items-center gap-2">
-        <i data-lucide="package-open" class="w-4 h-4 text-amber"></i>
-        <h5 class="me-card-title">Low Stock</h5>
+  {# Recent Clients #}
+  <div class="col-lg-4">
+    <div class="me-card h-100">
+      <div class="me-card-header">
+        <h6>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+          Recent Clients
+        </h6>
+        <a href="{{ url_for('clients.list_clients') }}" class="btn-me btn-outline-me btn-sm-me">All</a>
       </div>
-      <a href="{{ url_for('inventory.list_items') }}"
-         class="text-[12px] font-semibold text-slate-400 hover:text-amber
-                flex items-center gap-1 transition-colors duration-150">
-        All
-        <i data-lucide="arrow-right" class="w-3 h-3"></i>
-      </a>
-    </div>
-
-    <div class="flex-1">
-      {% if low_stock %}
-      <table class="me-table">
-        <thead>
-          <tr><th>Item</th><th>Category</th><th>Left</th></tr>
-        </thead>
-        <tbody>
-          {% for item in low_stock %}
-          <tr>
-            <td>
-              <a href="{{ url_for('inventory.detail', item_id=item.id) }}"
-                 class="font-semibold text-slate-900 hover:text-amber transition-colors text-[13px]">
-                {{ item.name }}
-              </a>
-            </td>
-            <td class="cell-muted">{{ item.category|title }}</td>
-            <td>
-              <span class="me-badge {{ 'me-badge-red' if item.available_qty == 0 else 'me-badge-yellow' }}">
-                {{ item.available_qty }}
-              </span>
-            </td>
-          </tr>
+      <div class="me-card-body p-0">
+        {% if recent_clients %}
+          {% for client in recent_clients %}
+          <a href="{{ url_for('clients.detail', client_id=client.id) }}" style="display:flex;align-items:center;gap:12px;padding:11px 18px;border-bottom:1px solid var(--admin-border);text-decoration:none;transition:background var(--t-fast);" onmouseover="this.style.background='var(--admin-overlay)'" onmouseout="this.style.background='transparent'">
+            <div class="me-avatar" style="width:32px;height:32px;font-size:12px;flex-shrink:0;">{{ client.full_name[0]|upper }}</div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:13px;font-weight:600;color:var(--admin-text);line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ client.full_name }}</div>
+              <div style="font-size:11px;color:var(--admin-text-muted);margin-top:2px;">{{ client.pipeline_stage.replace('_',' ').title() }}</div>
+            </div>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--admin-text-muted)" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          </a>
           {% endfor %}
-        </tbody>
-      </table>
-      {% else %}
-      <div class="me-empty py-10">
-        <i data-lucide="package-check" class="me-empty-icon text-green-300"></i>
-        <div class="me-empty-title text-green-600">Stock is healthy</div>
+        {% else %}
+          <div class="me-empty">
+            <h6>No clients yet</h6>
+            <p>Add your first client to get started.</p>
+          </div>
+        {% endif %}
       </div>
-      {% endif %}
+    </div>
+  </div>
+
+  {# Overdue Payments #}
+  <div class="col-lg-4">
+    <div class="me-card h-100">
+      <div class="me-card-header">
+        <h6>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          Overdue Payments
+        </h6>
+        {% if overdue_payments %}
+          <span class="tag" style="background:var(--danger-bg);color:hsl(0,62%,40%);border-color:hsl(0,52%,80%);">{{ overdue_payments|length }}</span>
+        {% endif %}
+      </div>
+      <div class="me-card-body p-0">
+        {% if overdue_payments %}
+          {% for pay in overdue_payments %}
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:11px 18px;border-bottom:1px solid var(--admin-border);">
+            <div>
+              <div style="font-size:13px;font-weight:600;color:var(--admin-text);">{{ pay.event.name if pay.event else '—' }}</div>
+              <div class="text-muted-sm">Due {{ pay.due_date | dateformat }}</div>
+            </div>
+            <div style="font-size:13px;font-weight:700;color:hsl(0,62%,40%);">{{ pay.amount | peso }}</div>
+          </div>
+          {% endfor %}
+          <div style="padding:12px 18px;">
+            <a href="{{ url_for('reports.index') }}" class="btn-me btn-danger-me btn-sm-me" style="width:100%;justify-content:center;">
+              View All Overdue
+            </a>
+          </div>
+        {% else %}
+          <div class="me-empty">
+            <div class="me-empty-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <h6>No overdue payments</h6>
+            <p>All payments are up to date.</p>
+          </div>
+        {% endif %}
+      </div>
     </div>
   </div>
 
 </div>
+{# END ROW 3 #}
 
 {% endblock %}
