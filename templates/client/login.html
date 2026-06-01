@@ -1,165 +1,127 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Client Log In - {{ APP_NAME }}</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        .card-login {
-            border: none;
-            border-radius: 12px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-            max-width: 420px;
-            width: 100%;
-        }
-        .card-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 12px 12px 0 0;
-            padding: 2rem;
-            text-align: center;
-        }
-        .card-header h2 {
-            margin: 0;
-            font-weight: 700;
-            font-size: 1.8rem;
-        }
-        .card-header p {
-            margin: 0.5rem 0 0 0;
-            opacity: 0.9;
-            font-size: 0.95rem;
-        }
-        .form-group {
-            margin-bottom: 1.2rem;
-        }
-        .form-control {
-            border-radius: 8px;
-            border: 1px solid #e0e0e0;
-            padding: 0.75rem;
-            font-size: 0.95rem;
-        }
-        .form-control:focus {
-            border-color: #667eea;
-            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
-        }
-        .btn-login {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border: none;
-            border-radius: 8px;
-            padding: 0.75rem;
-            font-weight: 600;
-            font-size: 1rem;
-            width: 100%;
-            margin-top: 1rem;
-        }
-        .btn-login:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
-            color: white;
-        }
-        .forgot-password {
-            text-align: right;
-            margin-top: 0.5rem;
-        }
-        .forgot-password a {
-            color: #667eea;
-            text-decoration: none;
-            font-weight: 500;
-            font-size: 0.9rem;
-        }
-        .forgot-password a:hover {
-            text-decoration: underline;
-        }
-        .register-link {
-            text-align: center;
-            margin-top: 1.5rem;
-            font-size: 0.95rem;
-        }
-        .register-link a {
-            color: #667eea;
-            text-decoration: none;
-            font-weight: 600;
-        }
-        .register-link a:hover {
-            text-decoration: underline;
-        }
-        .alert {
-            border-radius: 8px;
-            border: none;
-        }
-        .divider {
-            text-align: center;
-            color: #999;
-            margin: 1.5rem 0;
-            font-size: 0.9rem;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="csrf-token" content="{{ csrf_token() }}" />
+  <title>Client Login — {{ APP_NAME }}</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/metro.css') }}" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet" />
 </head>
-<body>
-    <div class="container">
-        <div class="card card-login">
-            <div class="card-header">
-                <h2>🔑 Client Log In</h2>
-                <p>Access your {{ APP_NAME }} portal</p>
-            </div>
-            <div class="card-body p-4">
-                <!-- Flash Messages -->
-                {% with messages = get_flashed_messages(with_categories=true) %}
-                    {% if messages %}
-                        {% for category, message in messages %}
-                            <div class="alert alert-{{ 'danger' if category == 'danger' else 'warning' if category == 'warning' else 'info' if category == 'info' else 'success' }} alert-dismissible fade show" role="alert">
-                                {{ message }}
-                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                            </div>
-                        {% endfor %}
-                    {% endif %}
-                {% endwith %}
+<body class="client-layout" style="display:flex;min-height:100vh;align-items:stretch;">
 
-                <form method="POST" novalidate>
-                    <!-- Email -->
-                    <div class="form-group">
-                        <label for="email" class="form-label">Email Address</label>
-                        <input type="email" class="form-control" id="email" name="email" 
-                               placeholder="you@example.com" required autofocus>
-                    </div>
+{# Full-page split: left warm visual, right form #}
+<div style="display:grid;grid-template-columns:1fr 1fr;min-height:100vh;width:100%;">
 
-                    <!-- Password -->
-                    <div class="form-group">
-                        <label for="password" class="form-label">Password</label>
-                        <input type="password" class="form-control" id="password" name="password" 
-                               placeholder="Enter your password" required>
-                        <div class="forgot-password">
-                            <a href="{{ url_for('client_auth.forgot_password') }}">Forgot password?</a>
-                        </div>
-                    </div>
+  {# LEFT: Ivory visual with golden ornament #}
+  <div style="background:linear-gradient(145deg,hsl(38,33%,96%) 0%,hsl(38,27%,92%) 100%);display:flex;flex-direction:column;justify-content:center;padding:60px 52px;position:relative;overflow:hidden;display:none;" class="d-lg-flex">
+    {# Decorative circle #}
+    <div style="position:absolute;top:-80px;right:-80px;width:320px;height:320px;background:radial-gradient(circle,rgba(212,168,67,0.12),transparent);border-radius:50%;"></div>
+    <div style="position:absolute;bottom:-60px;left:-60px;width:240px;height:240px;background:radial-gradient(circle,rgba(212,168,67,0.08),transparent);border-radius:50%;"></div>
 
-                    <!-- Submit -->
-                    <button type="submit" class="btn btn-primary btn-login">
-                        Log In 🚀
-                    </button>
-                </form>
+    <a href="{{ url_for('public.index') }}" style="display:inline-flex;align-items:center;gap:10px;text-decoration:none;margin-bottom:52px;position:relative;">
+      <div style="width:36px;height:36px;background:linear-gradient(135deg,var(--brand),var(--brand-dark));border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+      </div>
+      <span style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:700;color:var(--client-text);">{{ APP_NAME }}</span>
+    </a>
 
-                <div class="divider">or</div>
-
-                <!-- Register Link -->
-                <div class="register-link">
-                    Don't have an account? 
-                    <a href="{{ url_for('client_auth.register') }}">Sign Up Here</a>
-                </div>
-            </div>
-        </div>
+    <div style="position:relative;margin-bottom:40px;">
+      <div style="font-family:'DM Sans',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:var(--brand-dark);margin-bottom:12px;">Your Event Portal</div>
+      <h2 style="font-family:'Cormorant Garamond',Georgia,serif;font-size:clamp(2.4rem,3.5vw,3rem);font-weight:700;color:var(--client-text);margin:0 0 16px;letter-spacing:-0.03em;line-height:1.15;">Your dream event<br><em style="color:var(--brand);font-style:normal;">awaits.</em></h2>
+      <p style="font-family:'DM Sans',sans-serif;font-size:15px;color:var(--client-text-muted);line-height:1.7;max-width:340px;margin:0;">Sign in to view your event workspace, check your timeline, and communicate with our team.</p>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    {# Feature list #}
+    <div style="display:flex;flex-direction:column;gap:12px;position:relative;">
+      {% for label in ['Live event timeline & milestones', 'Payment tracking & invoices', 'Design inspiration board', 'Post-event feedback'] %}
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:20px;height:20px;background:var(--brand-light);border:1px solid hsl(38,72%,80%);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="var(--brand-dark)" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <span style="font-family:'DM Sans',sans-serif;font-size:13.5px;color:var(--client-text-2);">{{ label }}</span>
+      </div>
+      {% endfor %}
+    </div>
+
+  </div>
+
+  {# RIGHT: Login form - warm white #}
+  <div style="background:#fff;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:60px 52px;position:relative;">
+
+    <a href="{{ url_for('public.index') }}" style="position:absolute;top:28px;left:28px;display:flex;align-items:center;gap:6px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--client-text-muted);text-decoration:none;transition:color 0.18s;" onmouseover="this.style.color='var(--client-text)'" onmouseout="this.style.color='var(--client-text-muted)'">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+      Home
+    </a>
+
+    <div style="width:100%;max-width:380px;">
+
+      {# Mobile brand #}
+      <div class="d-lg-none" style="text-align:center;margin-bottom:32px;">
+        <div style="width:40px;height:40px;background:linear-gradient(135deg,var(--brand),var(--brand-dark));border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;margin:0 auto 10px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+        </div>
+        <span style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:700;color:var(--client-text);">{{ APP_NAME }}</span>
+      </div>
+
+      <div style="margin-bottom:32px;">
+        <span style="display:block;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--brand-dark);margin-bottom:8px;">Client Portal</span>
+        <h1 style="font-family:'Cormorant Garamond',Georgia,serif;font-size:32px;font-weight:700;color:var(--client-text);margin:0 0 8px;letter-spacing:-0.03em;">Sign In</h1>
+        <p style="font-family:'DM Sans',sans-serif;font-size:14px;color:var(--client-text-muted);margin:0;">New client? <a href="{{ url_for('client_auth.register') }}" style="color:var(--brand-dark);font-weight:600;">Create your account</a></p>
+      </div>
+
+      {# Flash messages #}
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for cat, msg in messages %}
+          <div class="me-alert me-alert-{{ 'danger' if cat in ['error','danger'] else cat }}" style="margin-bottom:16px;font-family:'DM Sans',sans-serif;">
+            <span>{{ msg }}</span>
+          </div>
+        {% endfor %}
+      {% endwith %}
+
+      <form method="POST" action="{{ url_for('client_auth.login') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+
+        <div style="margin-bottom:16px;">
+          <label style="display:block;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:var(--client-text-2);margin-bottom:6px;" for="email">Email address</label>
+          <input type="email" id="email" name="email" class="client-input" placeholder="your@email.com" required />
+        </div>
+
+        <div style="margin-bottom:20px;">
+          <label style="display:flex;justify-content:space-between;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:var(--client-text-2);margin-bottom:6px;" for="password">
+            <span>Password</span>
+            <a href="{{ url_for('client_auth.forgot_password') }}" style="font-weight:500;color:var(--brand-dark);font-size:12px;">Forgot?</a>
+          </label>
+          <div style="position:relative;">
+            <input type="password" id="password" name="password" class="client-input" placeholder="••••••••" required />
+            <button type="button" onclick="togglePwd('password')" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--client-text-muted);padding:0;display:flex;align-items:center;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-client btn-client-gold" style="width:100%;justify-content:center;padding:13px;font-size:15px;">
+          Sign in to My Portal
+        </button>
+      </form>
+
+      <div style="text-align:center;margin-top:24px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--client-text-muted);">
+        Are you an admin? <a href="{{ url_for('auth.login') }}" style="color:var(--client-text-2);font-weight:600;">Admin Login</a>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+function togglePwd(id) {
+  const input = document.getElementById(id);
+  input.type = input.type === 'password' ? 'text' : 'password';
+}
+</script>
 </body>
 </html>
