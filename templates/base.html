@@ -1,304 +1,227 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="csrf-token" content="{{ csrf_token() }}" />
   <title>{% block title %}{{ APP_NAME }}{% endblock %} — Metro Events</title>
 
-  {# ── Fonts: Outfit (brand/headings) + Plus Jakarta Sans (body) ── #}
+  {# Bootstrap 5 — kept for grid, modal, and utility compatibility #}
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />
+  {# Metro Events design system — overrides and custom components #}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/metro.css') }}" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
-
-  {# ── Tailwind CSS Play CDN (swap for compiled build in production) ── #}
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          fontFamily: {
-            brand:  ['Outfit', 'sans-serif'],
-            body:   ['"Plus Jakarta Sans"', 'sans-serif'],
-          },
-          colors: {
-            canvas:  '#F7F8FC',
-            surface: '#FFFFFF',
-            sidebar: '#0B0F1A',
-            'sidebar-2': '#111827',
-            amber: {
-              DEFAULT: '#C9A854',
-              light:   '#F5E6C3',
-              dark:    '#A8843A',
-            },
-          },
-        }
-      }
-    }
-  </script>
-
-  {# ── Design tokens & custom component classes ── #}
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/metro.css') }}" />
-
-  {# ── Lucide icon library (replaces all emoji icons) ── #}
-  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
-
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
   {% block head %}{% endblock %}
 </head>
-<body class="h-full font-body bg-canvas text-slate-800 antialiased">
+<body>
 
-{# ══════════════════════════════════════════════════════════════
-   AUTHENTICATED WORKSPACE LAYOUT
-══════════════════════════════════════════════════════════════ #}
 {% if current_user.is_authenticated %}
 
-{# Mobile sidebar overlay #}
-<div id="sidebarOverlay"
-     class="fixed inset-0 bg-black/50 z-40 hidden md:hidden transition-opacity duration-200"
-     onclick="closeSidebar()"></div>
+{# ── Sidebar overlay (mobile) ─────────────────────────────── #}
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-<div class="flex h-full min-h-screen">
+<div class="me-layout">
 
-  {# ── SIDEBAR ──────────────────────────────────────────────── #}
-  <aside id="sidebar"
-         class="me-sidebar fixed inset-y-0 left-0 z-50 flex flex-col bg-sidebar
-                w-64 -translate-x-full md:translate-x-0 transition-transform duration-200">
+  {# ═══════════════════════════════════════════════════════════
+     ADMIN SIDEBAR
+     ═══════════════════════════════════════════════════════════ #}
+  <aside class="me-sidebar" id="meSidebar">
 
-    {# Logo / Brand #}
-    <div class="px-5 py-5 border-b border-white/[0.07]">
-      <div class="flex items-center gap-2.5">
-        <div class="w-8 h-8 rounded-lg bg-amber flex items-center justify-center flex-shrink-0">
-          <i data-lucide="zap" class="w-4 h-4 text-sidebar"></i>
+    {# Brand #}
+    <div class="me-sidebar-logo">
+      <div class="brand-mark">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+          </svg>
         </div>
-        <div>
-          <div class="font-brand font-bold text-white text-[15px] leading-tight tracking-tight">
-            {{ APP_NAME }}
-          </div>
-          <div class="text-[10px] text-amber/80 font-medium tracking-widest uppercase mt-0.5">
-            {{ APP_TAGLINE }}
-          </div>
-        </div>
+        <span class="brand-name">{{ APP_NAME }}</span>
       </div>
+      <div class="brand-tag">{{ APP_TAGLINE }}</div>
     </div>
 
-    {# User mini-profile #}
-    <div class="px-4 py-3.5 border-b border-white/[0.06] flex items-center gap-3">
-      <div class="w-8 h-8 rounded-full bg-amber flex items-center justify-center
-                  text-sidebar font-bold font-brand text-sm flex-shrink-0">
-        {{ current_user.name[0]|upper }}
+    {# User pill #}
+    <div class="me-sidebar-user">
+      <div class="me-avatar">{{ current_user.name[0]|upper }}</div>
+      <div>
+        <div class="sidebar-user-name">{{ current_user.name }}</div>
+        <div class="sidebar-user-role">{{ current_user.role|title }}</div>
       </div>
-      <div class="min-w-0">
-        <div class="text-white text-[13px] font-semibold leading-tight truncate">
-          {{ current_user.name }}
-        </div>
-        <div class="text-white/40 text-[11px] capitalize">{{ current_user.role }}</div>
-      </div>
-      <a href="{{ url_for('auth.profile') }}"
-         class="ml-auto text-white/30 hover:text-white/70 transition-colors duration-150 flex-shrink-0"
-         title="Profile">
-        <i data-lucide="settings" class="w-3.5 h-3.5"></i>
-      </a>
     </div>
 
     {# Navigation #}
-    <nav class="flex-1 overflow-y-auto overflow-x-hidden py-3 px-2 space-y-0.5">
-
+    <nav class="me-nav">
       {% if current_user.role == 'client' %}
-        {# Client portal nav #}
-        {% include 'partials/_nav_client.html' %}
+        {# Client shouldn't be in admin layout — redirect handled in routes #}
+        <div class="me-nav-section">Portal</div>
+        <a href="{{ url_for('portal.home') }}" class="{{ 'active' if request.blueprint == 'portal' }}">
+          <span class="nav-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
+          </span> My Events
+        </a>
+
       {% else %}
-        {# ── Main ── #}
-        <div class="me-nav-label">Main</div>
-
-        <a href="{{ url_for('dashboard.index') }}"
-           class="me-nav-link {{ 'active' if request.endpoint == 'dashboard.index' }}">
-          <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
-          <span>Dashboard</span>
+        {# ── MAIN ── #}
+        <div class="me-nav-section">Main</div>
+        <a href="{{ url_for('dashboard.index') }}" class="{{ 'active' if request.endpoint == 'dashboard.index' }}">
+          <span class="nav-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          </span> Dashboard
         </a>
-        <a href="{{ url_for('events.list_events') }}"
-           class="me-nav-link {{ 'active' if request.blueprint == 'events' }}">
-          <i data-lucide="calendar-days" class="w-4 h-4"></i>
-          <span>Events</span>
-          {# Active events badge — injected from context_processor #}
+        <a href="{{ url_for('events.list_events') }}" class="{{ 'active' if request.blueprint == 'events' }}">
+          <span class="nav-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          </span> Events
         </a>
-        <a href="{{ url_for('clients.list_clients') }}"
-           class="me-nav-link {{ 'active' if request.blueprint == 'clients' }}">
-          <i data-lucide="users" class="w-4 h-4"></i>
-          <span>Clients &amp; CRM</span>
+        <a href="{{ url_for('clients.list_clients') }}" class="{{ 'active' if request.blueprint == 'clients' }}">
+          <span class="nav-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </span> Clients / CRM
         </a>
-        <a href="{{ url_for('dashboard.manage_reviews') }}"
-           class="me-nav-link {{ 'active' if request.endpoint == 'dashboard.manage_reviews' }}">
-          <i data-lucide="star" class="w-4 h-4"></i>
-          <span>Client Reviews</span>
-        </a>
-
-        {# ── Operations ── #}
-        <div class="me-nav-label mt-3">Operations</div>
-
-        <a href="{{ url_for('inventory.list_items') }}"
-           class="me-nav-link {{ 'active' if request.blueprint == 'inventory' }}">
-          <i data-lucide="package" class="w-4 h-4"></i>
-          <span>Inventory</span>
-        </a>
-        <a href="{{ url_for('meetings.index') }}"
-           class="me-nav-link {{ 'active' if request.blueprint == 'meetings' }}">
-          <i data-lucide="video" class="w-4 h-4"></i>
-          <span>Meetings</span>
-        </a>
-        <a href="{{ url_for('suppliers.list_suppliers') }}"
-           class="me-nav-link {{ 'active' if request.blueprint == 'suppliers' }}">
-          <i data-lucide="handshake" class="w-4 h-4"></i>
-          <span>Suppliers</span>
-        </a>
-        <a href="{{ url_for('reminders.index') }}"
-           class="me-nav-link {{ 'active' if request.blueprint == 'reminders' }}">
-          <i data-lucide="bell" class="w-4 h-4"></i>
-          <span>Reminders</span>
-          {% if due_soon_count > 0 %}
-          <span class="ml-auto me-badge me-badge-amber">{{ due_soon_count }}</span>
+        <a href="{{ url_for('dashboard.manage_reviews') }}" class="{{ 'active' if request.endpoint == 'dashboard.manage_reviews' }}">
+          <span class="nav-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          </span> Reviews
+          {% if overdue_count > 0 %}
+            <span class="nav-badge">{{ overdue_count }}</span>
           {% endif %}
         </a>
-        <a href="{{ url_for('reports.index') }}"
-           class="me-nav-link {{ 'active' if request.blueprint == 'reports' }}">
-          <i data-lucide="bar-chart-2" class="w-4 h-4"></i>
-          <span>Reports</span>
+
+        {# ── OPERATIONS ── #}
+        <div class="me-nav-section">Operations</div>
+        <a href="{{ url_for('inventory.list_items') }}" class="{{ 'active' if request.blueprint == 'inventory' }}">
+          <span class="nav-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+          </span> Inventory
+        </a>
+        <a href="{{ url_for('meetings.index') }}" class="{{ 'active' if request.blueprint == 'meetings' }}">
+          <span class="nav-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/></svg>
+          </span> Meetings
+        </a>
+        <a href="{{ url_for('suppliers.list_suppliers') }}" class="{{ 'active' if request.blueprint == 'suppliers' }}">
+          <span class="nav-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+          </span> Suppliers
+        </a>
+        <a href="{{ url_for('reports.index') }}" class="{{ 'active' if request.blueprint == 'reports' }}">
+          <span class="nav-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          </span> Reports
         </a>
 
-        {# ── Admin ── #}
+        {# ── ADMIN ── #}
         {% if current_user.is_admin %}
-        <div class="me-nav-label mt-3">Admin</div>
-        <a href="{{ url_for('auth.users_list') }}"
-           class="me-nav-link {{ 'active' if request.endpoint == 'auth.users_list' }}">
-          <i data-lucide="shield-check" class="w-4 h-4"></i>
-          <span>Team / Users</span>
+        <div class="me-nav-section">Admin</div>
+        <a href="{{ url_for('auth.users_list') }}" class="{{ 'active' if request.endpoint == 'auth.users_list' }}">
+          <span class="nav-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          </span> Team Members
         </a>
-        <a href="{{ url_for('auth.register') }}"
-           class="me-nav-link {{ 'active' if request.endpoint == 'auth.register' }}">
-          <i data-lucide="user-plus" class="w-4 h-4"></i>
-          <span>Add User</span>
+        <a href="{{ url_for('auth.register') }}" class="{{ 'active' if request.endpoint == 'auth.register' }}">
+          <span class="nav-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+          </span> Add User
+        </a>
+        <a href="{{ url_for('admin.approval_queue') }}" class="{{ 'active' if request.blueprint == 'admin' }}">
+          <span class="nav-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          </span> Approvals
+          {% if due_soon_count > 0 %}
+            <span class="nav-badge" style="background:var(--warning);color:hsl(38,60%,20%);">{{ due_soon_count }}</span>
+          {% endif %}
         </a>
         {% endif %}
 
       {% endif %}
     </nav>
 
-    {# Sidebar footer: logout #}
-    <div class="px-4 py-3 border-t border-white/[0.06]">
-      <a href="{{ url_for('auth.logout') }}"
-         class="flex items-center gap-2.5 text-white/40 hover:text-white/80
-                text-[13px] transition-colors duration-150 group">
-        <i data-lucide="log-out" class="w-4 h-4 group-hover:-translate-x-0.5 transition-transform duration-150"></i>
+    {# Footer links #}
+    <div class="me-sidebar-footer">
+      <a href="{{ url_for('auth.profile') }}" class="{{ 'active' if request.endpoint == 'auth.profile' }}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+        Settings
+      </a>
+      <a href="{{ url_for('auth.logout') }}" class="logout">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
         Sign Out
       </a>
     </div>
+
   </aside>
+  {# END SIDEBAR #}
 
-  {# ── MAIN CONTENT AREA ────────────────────────────────────── #}
-  <div class="flex flex-col flex-1 min-h-screen md:pl-64">
+  {# ═══════════════════════════════════════════════════════════
+     MAIN CONTENT AREA
+     ═══════════════════════════════════════════════════════════ #}
+  <div class="me-main">
 
-    {# ── TOPBAR ── #}
-    <header class="sticky top-0 z-30 bg-white border-b border-slate-200/80
-                   px-6 flex items-center justify-between h-14 shadow-sm shadow-slate-100">
-      <div class="flex items-center gap-3">
-        {# Mobile hamburger #}
-        <button onclick="openSidebar()"
-                class="md:hidden p-1.5 rounded-md text-slate-500 hover:bg-slate-100
-                       hover:text-slate-900 transition-colors duration-150">
-          <i data-lucide="menu" class="w-5 h-5"></i>
+    {# Topbar #}
+    <header class="me-topbar">
+      <div class="me-topbar-left">
+        <button class="sidebar-toggle-btn" id="sidebarToggle" aria-label="Toggle sidebar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
         </button>
-
-        {# Page title + breadcrumb #}
         <div>
-          <h1 class="font-brand font-bold text-[15px] text-slate-900 leading-none">
-            {% block page_title %}{{ APP_NAME }}{% endblock %}
-          </h1>
-          <div class="text-[11px] text-slate-400 mt-0.5 font-medium">
-            {% block breadcrumb %}{% endblock %}
-          </div>
+          <div class="me-page-title">{% block page_title %}{{ APP_NAME }}{% endblock %}</div>
+          <div class="me-breadcrumb">{% block breadcrumb %}{% endblock %}</div>
         </div>
       </div>
-
-      {# Right side: notifications + actions #}
-      <div class="flex items-center gap-2">
-
-        {# Payment alert bell #}
+      <div class="me-topbar-right">
+        {# Payment warnings #}
         {% if overdue_count > 0 %}
-        <button class="relative p-2 rounded-lg text-slate-500 hover:bg-amber-50
-                       hover:text-amber transition-colors duration-150"
-                title="{{ overdue_count }} overdue payment(s)">
-          <i data-lucide="bell-ring" class="w-4.5 h-4.5"></i>
-          <span class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-        </button>
+          <a href="{{ url_for('reports.index') }}" class="tag gold" style="text-decoration:none;">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            {{ overdue_count }} Overdue
+          </a>
         {% endif %}
-
-        {# Page-level CTA actions #}
         {% block topbar_actions %}{% endblock %}
-
       </div>
     </header>
 
-    {# ── FLASH MESSAGES ── #}
+    {# Flash messages #}
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
-      <div class="px-6 pt-4 space-y-2">
-        {% for cat, msg in messages %}
-        <div class="me-alert me-alert-{{ 'danger' if cat == 'error' else cat }}
-                    flex items-start gap-3 rounded-xl px-4 py-3 text-sm font-medium
-                    border shadow-sm" role="alert">
-          {% if cat in ['success', 'info'] %}
-            <i data-lucide="{{ 'circle-check' if cat == 'success' else 'info' }}"
-               class="w-4 h-4 mt-0.5 flex-shrink-0"></i>
-          {% else %}
-            <i data-lucide="triangle-alert" class="w-4 h-4 mt-0.5 flex-shrink-0"></i>
-          {% endif %}
-          <span class="flex-1">{{ msg }}</span>
-          <button onclick="this.parentElement.remove()"
-                  class="opacity-50 hover:opacity-100 transition-opacity flex-shrink-0">
-            <i data-lucide="x" class="w-4 h-4"></i>
-          </button>
+        <div style="padding: 16px 28px 0;">
+          {% for cat, msg in messages %}
+            <div class="me-alert me-alert-{{ 'danger' if cat in ['error','danger'] else ('success' if cat=='success' else ('warning' if cat=='warning' else 'info')) }} alert-dismissible fade show" role="alert">
+              {% if cat in ['error','danger'] %}
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+              {% elif cat == 'success' %}
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+              {% elif cat == 'warning' %}
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              {% else %}
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              {% endif %}
+              <span>{{ msg }}</span>
+              <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close" style="font-size:11px;"></button>
+            </div>
+          {% endfor %}
         </div>
-        {% endfor %}
-      </div>
       {% endif %}
     {% endwith %}
 
-    {# ── PAGE CONTENT WORKSPACE ── #}
-    <main class="flex-1 p-6">
+    {# Page content #}
+    <main class="me-content">
       {% block content %}{% endblock %}
     </main>
 
-    {# ── FOOTER ── #}
-    <footer class="px-6 py-3 border-t border-slate-100">
-      <p class="text-[11px] text-slate-400">
-        {{ APP_NAME }} &mdash; All rights reserved &copy; {{ now.year if now else '2025' }}
-      </p>
-    </footer>
   </div>
+  {# END MAIN #}
 
 </div>
-
-{# ── MODAL SLOT (page templates inject modal content here) ── #}
-<div id="modalBackdrop"
-     class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center p-4"
-     onclick="closeModal(event)">
-  <div id="modalContainer"
-       class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh]
-              overflow-y-auto relative">
-    {% block modal %}{% endblock %}
-  </div>
-</div>
+{# END LAYOUT #}
 
 {% else %}
-{# ══ AUTH / PUBLIC PAGES (no sidebar) ══ #}
+  {# ── Unauthenticated users get auth_content (no sidebar) ── #}
   {% block auth_content %}{% endblock %}
 {% endif %}
 
-{# ── SCRIPTS ────────────────────────────────────────────────── #}
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="{{ url_for('static', filename='js/metro.js') }}"></script>
-<script>
-  // Initialise all Lucide icons on the page
-  lucide.createIcons();
-</script>
 {% block scripts %}{% endblock %}
 </body>
 </html>

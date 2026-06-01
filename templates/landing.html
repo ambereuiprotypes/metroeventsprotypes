@@ -3,830 +3,367 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Metro Events — Creating Memories</title>
+  <title>{{ APP_NAME }} — {{ APP_TAGLINE }}</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/metro.css') }}" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  <style>
-    :root {
-      --dark:   #1A1A2E;
-      --gold:   #D4A843;
-      --gold2:  #F0C060;
-      --light:  #F8F9FC;
-      --text:   #2D3748;
-      --muted:  #718096;
-    }
-
-    * { box-sizing: border-box; }
-    body { font-family: 'Inter', sans-serif; color: var(--text); background: #fff; margin: 0; }
-
-    /* ── NAVBAR ── */
-    .pub-nav {
-      position: sticky; top: 0; z-index: 999;
-      background: rgba(26,26,46,.97);
-      backdrop-filter: blur(8px);
-      padding: 14px 0;
-    }
-    .pub-nav .brand { font-size: 1.25rem; font-weight: 800; color: #fff; text-decoration: none; }
-    .pub-nav .brand span { color: var(--gold); }
-    .pub-nav .tagline { font-size: .7rem; color: var(--gold2); letter-spacing: .05em; }
-    .pub-nav .nav-links a {
-      color: rgba(255,255,255,.8); text-decoration: none; font-size: .875rem;
-      font-weight: 500; padding: 6px 12px; border-radius: 6px;
-      transition: color .2s;
-    }
-    .pub-nav .nav-links a:hover { color: var(--gold); }
-    
-    .pub-nav .dropdown-menu .dropdown-item {
-      color: var(--text) !important;
-      font-weight: 500;
-      transition: all 0.2s;
-    }
-    .pub-nav .dropdown-menu .dropdown-item:hover {
-      background: var(--light);
-      color: var(--dark) !important;
-    }
-    .pub-nav .dropdown-menu .dropdown-item.text-danger {
-      color: #dc3545 !important;
-    }
-
-    .btn-nav-login {
-      background: transparent; border: 1.5px solid var(--gold);
-      color: var(--gold) !important; border-radius: 8px;
-      padding: 6px 16px !important; font-weight: 600 !important;
-      transition: all .2s !important;
-    }
-    .btn-nav-login:hover { background: var(--gold) !important; color: var(--dark) !important; }
-    .btn-nav-register {
-      background: var(--gold); border: none; color: var(--dark) !important;
-      border-radius: 8px; padding: 6px 16px !important;
-      font-weight: 700 !important; transition: all .2s !important;
-    }
-    .btn-nav-register:hover { background: var(--gold2) !important; }
-
-    /* ── HERO ── */
-    .hero {
-      background: linear-gradient(135deg, var(--dark) 0%, #2D2D5E 60%, #1A1A2E 100%);
-      min-height: 92vh;
-      display: flex; align-items: center;
-      position: relative; overflow: hidden;
-    }
-    .hero::before {
-      content: '';
-      position: absolute; inset: 0;
-      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-    }
-    .hero-badge {
-      display: inline-block;
-      background: rgba(212,168,67,.15); border: 1px solid rgba(212,168,67,.4);
-      color: var(--gold2); font-size: .75rem; font-weight: 600;
-      padding: 5px 14px; border-radius: 50px; letter-spacing: .08em;
-      text-transform: uppercase; margin-bottom: 20px;
-    }
-    .hero h1 {
-      font-size: clamp(2.2rem, 5vw, 3.8rem);
-      font-weight: 800; color: #fff; line-height: 1.15;
-      margin-bottom: 20px;
-    }
-    .hero h1 span { color: var(--gold); }
-    .hero p {
-      font-size: 1.1rem; color: rgba(255,255,255,.7);
-      max-width: 520px; line-height: 1.7; margin-bottom: 36px;
-    }
-    .btn-hero-primary {
-      background: var(--gold); color: var(--dark);
-      font-weight: 700; font-size: 1rem;
-      padding: 14px 32px; border-radius: 10px;
-      text-decoration: none; border: none;
-      transition: all .2s; display: inline-block;
-    }
-    .btn-hero-primary:hover { background: var(--gold2); color: var(--dark); transform: translateY(-2px); }
-    .btn-hero-secondary {
-      background: transparent; color: #fff;
-      font-weight: 600; font-size: 1rem;
-      padding: 14px 32px; border-radius: 10px;
-      text-decoration: none; border: 1.5px solid rgba(255,255,255,.3);
-      transition: all .2s; display: inline-block;
-    }
-    .btn-hero-secondary:hover { border-color: var(--gold); color: var(--gold); }
-    .hero-stats {
-      display: flex; gap: 32px; margin-top: 48px;
-      padding-top: 32px; border-top: 1px solid rgba(255,255,255,.1);
-    }
-    .hero-stat-val { font-size: 1.8rem; font-weight: 800; color: var(--gold); }
-    .hero-stat-lbl { font-size: .75rem; color: rgba(255,255,255,.5); text-transform: uppercase; letter-spacing: .06em; }
-    .hero-image-wrap {
-      position: relative; text-align: center;
-    }
-    .hero-floater {
-      background: rgba(255,255,255,.07); backdrop-filter: blur(10px);
-      border: 1px solid rgba(255,255,255,.12);
-      border-radius: 16px; padding: 16px 20px;
-      color: #fff; font-size: .8rem;
-      position: absolute;
-    }
-    .hero-floater.f1 { top: 10%; left: -10%; }
-    .hero-floater.f2 { bottom: 15%; right: -5%; }
-    .hero-emoji { font-size: 7rem; display: block; line-height: 1; }
-
-    /* ── SECTIONS ── */
-    section { padding: 80px 0; }
-    .section-label {
-      font-size: .75rem; font-weight: 700; color: var(--gold);
-      text-transform: uppercase; letter-spacing: .12em; margin-bottom: 10px;
-    }
-    .section-title { font-size: clamp(1.6rem, 3vw, 2.4rem); font-weight: 800; color: var(--dark); margin-bottom: 14px; }
-    .section-sub { font-size: 1rem; color: var(--muted); max-width: 520px; line-height: 1.7; }
-
-    /* ── SERVICES ── */
-    .services { background: var(--light); }
-    .service-card {
-      background: #fff; border-radius: 16px;
-      padding: 32px 28px; height: 100%;
-      border: 1px solid #EEF0F6;
-      transition: all .25s;
-      box-shadow: 0 2px 8px rgba(0,0,0,.04);
-    }
-    .service-card:hover { transform: translateY(-6px); box-shadow: 0 12px 32px rgba(0,0,0,.1); border-color: var(--gold); }
-    .service-icon { font-size: 2.4rem; margin-bottom: 16px; }
-    .service-card h4 { font-size: 1.05rem; font-weight: 700; margin-bottom: 10px; color: var(--dark); }
-    .service-card p { font-size: .875rem; color: var(--muted); line-height: 1.65; margin: 0; }
-
-    /* ── PACKAGES ── */
-    .pkg-card {
-      border-radius: 20px; padding: 36px 28px; height: 100%;
-      border: 2px solid #EEF0F6; position: relative;
-      transition: all .25s; background: #fff;
-    }
-    .pkg-card.featured {
-      border-color: var(--gold);
-      background: linear-gradient(160deg, #FFFBF0, #fff);
-      box-shadow: 0 8px 32px rgba(212,168,67,.15);
-    }
-    .pkg-badge {
-      position: absolute; top: -14px; left: 50%; transform: translateX(-50%);
-      background: var(--gold); color: var(--dark);
-      font-size: .7rem; font-weight: 700; padding: 4px 16px;
-      border-radius: 50px; text-transform: uppercase; letter-spacing: .08em;
-      white-space: nowrap;
-    }
-    .pkg-name { font-size: 1.2rem; font-weight: 800; color: var(--dark); margin-bottom: 6px; }
-    .pkg-price { font-size: 1.8rem; font-weight: 800; color: var(--gold); margin-bottom: 4px; }
-    .pkg-price span { font-size: .9rem; font-weight: 400; color: var(--muted); }
-    .pkg-desc { font-size: .8rem; color: var(--muted); margin-bottom: 20px; }
-    .pkg-features { list-style: none; padding: 0; margin: 0 0 28px; }
-    .pkg-features li { font-size: .85rem; color: var(--text); padding: 6px 0; border-bottom: 1px solid #F0F2F7; display: flex; gap: 10px; align-items: flex-start; }
-    .pkg-features li:last-child { border: none; }
-    .pkg-features li::before { content: '✓'; color: var(--gold); font-weight: 700; flex-shrink: 0; }
-    .btn-pkg {
-      display: block; text-align: center; text-decoration: none;
-      background: var(--dark); color: #fff;
-      padding: 12px; border-radius: 10px; font-weight: 600; font-size: .875rem;
-      transition: all .2s;
-    }
-    .btn-pkg:hover { background: var(--gold); color: var(--dark); }
-    .pkg-card.featured .btn-pkg { background: var(--gold); color: var(--dark); }
-    .pkg-card.featured .btn-pkg:hover { background: var(--dark); color: #fff; }
-
-    /* ── PORTFOLIO ── */
-    .portfolio { background: var(--dark); }
-    .portfolio .section-title { color: #fff; }
-    .portfolio .section-label { color: var(--gold2); }
-    .portfolio .section-sub { color: rgba(255,255,255,.6); }
-    .port-card {
-      border-radius: 16px; overflow: hidden;
-      background: rgba(255,255,255,.06);
-      border: 1px solid rgba(255,255,255,.1);
-      transition: all .25s;
-    }
-    .port-card:hover { transform: translateY(-4px); border-color: var(--gold); }
-    .port-img {
-      height: 200px; display: flex; align-items: center; justify-content: center;
-      font-size: 4rem; background: rgba(255,255,255,.04);
-    }
-    .port-body { padding: 20px; }
-    .port-type { font-size: .7rem; color: var(--gold); font-weight: 700; text-transform: uppercase; letter-spacing: .1em; margin-bottom: 6px; }
-    .port-title { font-size: 1rem; font-weight: 700; color: #fff; margin-bottom: 6px; }
-    .port-desc { font-size: .8rem; color: rgba(255,255,255,.5); line-height: 1.6; margin: 0; }
-
-    /* ── WHY US ── */
-    .whyus { background: var(--light); }
-    .why-item { display: flex; gap: 18px; align-items: flex-start; margin-bottom: 28px; }
-    .why-icon {
-      width: 48px; height: 48px; border-radius: 12px;
-      background: rgba(212,168,67,.12); display: flex; align-items: center;
-      justify-content: center; font-size: 1.4rem; flex-shrink: 0;
-    }
-    .why-item h5 { font-size: .95rem; font-weight: 700; margin-bottom: 4px; color: var(--dark); }
-    .why-item p { font-size: .825rem; color: var(--muted); line-height: 1.6; margin: 0; }
-
-    /* ── TESTIMONIALS ── */
-    .testi-card {
-      background: #fff; border-radius: 16px; padding: 28px;
-      border: 1px solid #EEF0F6; height: 100%;
-      box-shadow: 0 2px 12px rgba(0,0,0,.04);
-    }
-    .testi-stars { color: var(--gold); font-size: .9rem; margin-bottom: 12px; }
-    .testi-text { font-size: .875rem; color: var(--text); line-height: 1.7; margin-bottom: 20px; font-style: italic; }
-    .testi-name { font-size: .85rem; font-weight: 700; color: var(--dark); }
-    .testi-event { font-size: .75rem; color: var(--muted); }
-
-    /* ── CTA ── */
-    .cta-section {
-      background: linear-gradient(135deg, var(--dark), #2D2D5E);
-      padding: 80px 0; text-align: center;
-    }
-    .cta-section h2 { font-size: clamp(1.8rem, 4vw, 2.8rem); font-weight: 800; color: #fff; margin-bottom: 14px; }
-    .cta-section h2 span { color: var(--gold); }
-    .cta-section p { color: rgba(255,255,255,.65); font-size: 1rem; margin-bottom: 32px; }
-
-    /* ── FOOTER ── */
-    footer {
-      background: #111122; padding: 40px 0 24px;
-      color: rgba(255,255,255,.5); font-size: .8rem;
-    }
-    footer .brand { font-size: 1.1rem; font-weight: 800; color: #fff; }
-    footer .brand span { color: var(--gold); }
-    footer a { color: rgba(255,255,255,.5); text-decoration: none; }
-    footer a:hover { color: var(--gold); }
-    footer hr { border-color: rgba(255,255,255,.08); }
-  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet" />
 </head>
-<body>
+<body style="background:#fff;overflow-x:hidden;">
 
+{# ── NAVBAR ──────────────────────────────────────────────────── #}
 <nav class="pub-nav">
-  <div class="container d-flex align-items-center justify-content-between">
-    <a href="#" class="brand">
-      <span>⚡</span> {{ APP_NAME }}
-      <div class="tagline">{{ APP_TAGLINE }}</div>
+  <div class="pub-nav-inner">
+    <a href="{{ url_for('public.index') }}" class="pub-nav-brand">
+      <div class="pub-nav-brand-icon">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+      </div>
+      <span class="pub-nav-brand-text">{{ APP_NAME }}</span>
     </a>
-    <div class="nav-links d-none d-md-flex align-items-center gap-1">
+
+    <div class="pub-nav-links">
       <a href="#services">Services</a>
-      <a href="#packages">Packages</a>
-      <a href="#portfolio">Portfolio</a>
-      <a href="#testimonials">Reviews</a>
-      <a href="#contact">Contact</a>
-      
-      {% if current_user.is_authenticated %}
-        <div class="dropdown ms-2">
-            <button class="btn-nav-login dropdown-toggle" type="button" id="userMenu" data-bs-toggle="dropdown" aria-expanded="false">
-                👋 Welcome, {{ current_user.name.split(' ')[0] }}
-            </button>
-            <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2" aria-labelledby="userMenu">
-                <li>
-                  <a class="dropdown-item py-2" href="{{ url_for('auth.profile') }}">
-                    <span class="me-2">⚙️</span> Edit Profile
-                  </a>
-                </li>
-                <li>
-                  <a class="dropdown-item py-2" href="#" data-bs-toggle="modal" data-bs-target="#orderRequestModal">
-                    <span class="me-2">📦</span> Request a Package
-                  </a>
-                </li>
-              <li>
-                <a class="dropdown-item py-2" href="#" data-bs-toggle="modal" data-bs-target="#reviewModal">
-                    <span class="me-2">🌟</span> Leave a Review
-              </a>
-              </li>
-                {% if current_user.role != 'client' %}
-                <li>
-                  <a class="dropdown-item py-2" href="{{ url_for('dashboard.index') }}">
-                    <span class="me-2">📊</span> Admin Dashboard
-                  </a>
-                </li>
-                {% endif %}
-                <li><hr class="dropdown-divider"></li>
-                <li>
-                  <a class="dropdown-item py-2 text-danger" href="{{ url_for('auth.logout') }}">
-                    <span class="me-2">🚪</span> Logout
-                  </a>
-                </li>
-            </ul>
-        </div>
-      {% else %}
-        <a href="{{ url_for('auth.login') }}" class="btn-nav-login ms-2">Login</a>
-        <a href="{{ url_for('auth.register') }}" class="btn-nav-register ms-1">Get Started</a>
-      {% endif %}
+      <a href="#events">Event Types</a>
+      <a href="#about">About</a>
     </div>
 
-    <div class="d-md-none">
+    <div class="pub-nav-actions">
       {% if current_user.is_authenticated %}
+        {% if current_user.role == 'client' %}
+          <a href="{{ url_for('portal.home') }}" class="btn-nav-login">My Portal</a>
+        {% else %}
+          <a href="{{ url_for('dashboard.index') }}" class="btn-nav-login">Dashboard</a>
+        {% endif %}
+
         <div class="dropdown">
-          <button class="btn-nav-login dropdown-toggle" type="button" data-bs-toggle="dropdown">Menu</button>
-          <ul class="dropdown-menu dropdown-menu-end shadow border-0">
-             <li><a class="dropdown-item" href="{{ url_for('auth.profile') }}">Profile</a></li>
-             <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#orderRequestModal">Order Request</a></li>
-             <li><hr class="dropdown-divider"></li>
-             <li><a class="dropdown-item text-danger" href="{{ url_for('auth.logout') }}">Logout</a></li>
+          <button class="btn-nav-register dropdown-toggle" data-bs-toggle="dropdown" style="border:none;display:flex;align-items:center;gap:7px;">
+            <div style="width:22px;height:22px;background:rgba(255,255,255,0.2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;">{{ current_user.name[0]|upper }}</div>
+            {{ current_user.name.split()[0] }}
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end">
+            {% if current_user.role != 'client' %}
+              <li><a class="dropdown-item" href="{{ url_for('dashboard.index') }}">Dashboard</a></li>
+            {% else %}
+              <li><a class="dropdown-item" href="{{ url_for('portal.home') }}">My Events</a></li>
+            {% endif %}
+            <li><a class="dropdown-item" href="{{ url_for('auth.profile') }}">Profile</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item text-danger" href="{{ url_for('auth.logout') }}">Sign Out</a></li>
           </ul>
         </div>
+
       {% else %}
-        <div class="d-flex gap-2">
-          <a href="{{ url_for('auth.login') }}" class="btn-nav-login">Login</a>
-          <a href="{{ url_for('auth.register') }}" class="btn-nav-register">Sign Up</a>
-        </div>
+        <a href="{{ url_for('client_auth.login') }}" class="btn-nav-login">Client Login</a>
+        <a href="{{ url_for('auth.login') }}" class="btn-nav-register">Team Login</a>
       {% endif %}
     </div>
   </div>
 </nav>
 
-<div class="container mt-3" style="position: fixed; top: 80px; left: 50%; transform: translateX(-50%); z-index: 1050; max-width: 600px;">
-  {% with messages = get_flashed_messages(with_categories=true) %}
-    {% for cat, msg in messages %}
-      <div class="alert alert-{{ 'info' if cat == 'message' else cat }} alert-dismissible fade show shadow-sm" role="alert">
-        {{ msg }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+{# ── HERO ────────────────────────────────────────────────────── #}
+<section class="pub-hero">
+  <div class="pub-hero-inner">
+    {# Left content #}
+    <div>
+      <div class="hero-badge">
+        <span class="hero-badge-dot"></span>
+        Professional Event Management
       </div>
-    {% endfor %}
-  {% endwith %}
-</div>
-
-<section class="hero">
-  <div class="container position-relative">
-    <div class="row align-items-center">
-      <div class="col-lg-6">
-        <div class="hero-badge">✨ Premium Event Management</div>
-        <h1>
-          We Turn Your<br>
-          Vision Into a<br>
-          <span>Lasting Memory</span>
-        </h1>
-        <p>
-          From intimate weddings to grand corporate galas — Metro Events handles every detail so you can be fully present for every moment.
-        </p>
-        <div class="d-flex flex-wrap gap-3">
-          <a href="#packages" class="btn-hero-primary">View Packages</a>
-          {% if current_user.is_authenticated %}
-            <a href="#" class="btn-hero-secondary" data-bs-toggle="modal" data-bs-target="#orderRequestModal">Start Planning Now →</a>
+      <h1 class="hero-h1">
+        Every great event<br>
+        begins with a<br>
+        <em>master plan.</em>
+      </h1>
+      <p class="hero-p">
+        Metro Events transforms your vision into a flawlessly executed reality. From intimate gatherings to grand celebrations — we handle every detail with precision.
+      </p>
+      <div class="hero-actions">
+        {% if current_user.is_authenticated %}
+          {% if current_user.role == 'client' %}
+            <a href="{{ url_for('portal.home') }}" class="btn-hero-primary">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+              View My Events
+            </a>
           {% else %}
-            <a href="{{ url_for('auth.login') }}" class="btn-hero-secondary">Client Portal →</a>
+            <a href="{{ url_for('dashboard.index') }}" class="btn-hero-primary">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+              Go to Dashboard
+            </a>
           {% endif %}
+        {% else %}
+          <a href="{{ url_for('client_auth.register') }}" class="btn-hero-primary">
+            Start Planning
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+          </a>
+          <a href="#services" class="btn-hero-secondary">Learn more</a>
+        {% endif %}
+      </div>
+
+      <div class="hero-stats">
+        <div class="hero-stat">
+          <div class="hero-stat-num">500+</div>
+          <div class="hero-stat-label">Events Delivered</div>
         </div>
-        <div class="hero-stats">
-          <div>
-            <div class="hero-stat-val">200+</div>
-            <div class="hero-stat-lbl">Events Done</div>
+        <div class="hero-stat" style="padding-left:28px;border-left:1px solid rgba(255,255,255,0.08);">
+          <div class="hero-stat-num">98%</div>
+          <div class="hero-stat-label">Client Satisfaction</div>
+        </div>
+        <div class="hero-stat" style="padding-left:28px;border-left:1px solid rgba(255,255,255,0.08);">
+          <div class="hero-stat-num">10yr</div>
+          <div class="hero-stat-label">Experience</div>
+        </div>
+      </div>
+    </div>
+
+    {# Right visual card #}
+    <div class="hero-visual">
+      <div class="hero-visual-card">
+        <div class="hero-visual-card-header">
+          <span class="hvc-dot" style="background:#ef4444;"></span>
+          <span class="hvc-dot" style="background:#f59e0b;margin:0 4px;"></span>
+          <span class="hvc-dot" style="background:#22c55e;"></span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:rgba(255,255,255,0.4);margin-left:10px;">Live Events</span>
+        </div>
+
+        {# Mock event items #}
+        <div class="hero-event-item">
+          <div class="hero-event-icon" style="background:rgba(239,68,68,0.15);">
+            <span style="font-size:18px;">💍</span>
           </div>
-          <div>
-            <div class="hero-stat-val">98%</div>
-            <div class="hero-stat-lbl">Happy Clients</div>
+          <div style="flex:1;">
+            <div class="hero-event-name">Santos — Reyes Wedding</div>
+            <div class="hero-event-date">Jun 28, 2025 &bull; The Peninsula Hotel</div>
           </div>
-          <div>
-            <div class="hero-stat-val">5★</div>
-            <div class="hero-stat-lbl">Avg Rating</div>
+          <span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:9999px;background:rgba(34,197,94,0.15);color:#4ade80;border:1px solid rgba(34,197,94,0.25);">Ready</span>
+        </div>
+
+        <div class="hero-event-item">
+          <div class="hero-event-icon" style="background:rgba(99,102,241,0.15);">
+            <span style="font-size:18px;">🏢</span>
+          </div>
+          <div style="flex:1;">
+            <div class="hero-event-name">TechCorp Product Launch</div>
+            <div class="hero-event-date">Jul 15, 2025 &bull; Makati Grand</div>
+          </div>
+          <span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:9999px;background:rgba(251,191,36,0.15);color:#fbbf24;border:1px solid rgba(251,191,36,0.25);">Production</span>
+        </div>
+
+        <div class="hero-event-item">
+          <div class="hero-event-icon" style="background:rgba(212,168,67,0.15);">
+            <span style="font-size:18px;">🎂</span>
+          </div>
+          <div style="flex:1;">
+            <div class="hero-event-name">Isabella's 18th Debut</div>
+            <div class="hero-event-date">Aug 3, 2025 &bull; Solaire Resort</div>
+          </div>
+          <span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:9999px;background:rgba(99,102,241,0.15);color:#a5b4fc;border:1px solid rgba(99,102,241,0.25);">Planning</span>
+        </div>
+
+        {# Mini stats row #}
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:14px;">
+          <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:10px;text-align:center;">
+            <div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:700;color:var(--brand);line-height:1;">12</div>
+            <div style="font-family:'DM Sans',sans-serif;font-size:9px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.08em;margin-top:3px;">Active</div>
+          </div>
+          <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:10px;text-align:center;">
+            <div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:700;color:hsl(152,57%,55%);line-height:1;">3</div>
+            <div style="font-family:'DM Sans',sans-serif;font-size:9px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.08em;margin-top:3px;">This Week</div>
+          </div>
+          <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:10px;text-align:center;">
+            <div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:700;color:#fff;line-height:1;">48</div>
+            <div style="font-family:'DM Sans',sans-serif;font-size:9px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.08em;margin-top:3px;">Total</div>
           </div>
         </div>
       </div>
-      <div class="col-lg-6 d-none d-lg-block">
-        <div class="hero-image-wrap" style="padding: 40px 0;">
-          <span class="hero-emoji">🎊</span>
-          <div class="hero-floater f1">
-            <div style="font-size:1.2rem;">📅</div>
-            <div style="font-weight:700;">Next Event</div>
-            <div style="color:var(--gold2);">Tomorrow, 3PM</div>
+    </div>
+
+  </div>
+</section>
+
+{# ── SERVICES ────────────────────────────────────────────────── #}
+<section class="pub-section" id="services">
+  <div class="pub-section-inner">
+    <div style="display:grid;grid-template-columns:1fr 2fr;gap:60px;align-items:start;" class="row g-0">
+      <div>
+        <span class="pub-section-badge">What We Do</span>
+        <h2 class="pub-section-h2">Full-service event management.</h2>
+        <p class="pub-section-p">We handle everything from the first concept call to the final cleanup. Your only job is to enjoy the day.</p>
+        <a href="{{ url_for('client_auth.register') }}" class="btn-hero-primary" style="margin-top:24px;display:inline-flex;font-size:14px;padding:11px 24px;">
+          Get Started
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+        </a>
+      </div>
+      <div class="feature-grid">
+        {% set features = [
+          ('Planning & Coordination', 'From timeline creation to vendor management — we coordinate every moving part.'),
+          ('Client Portal Access', 'Your own live portal to track every milestone, payment, and design choice.'),
+          ('Design & Moodboarding', 'Share inspiration and approve designs through a collaborative digital board.'),
+          ('Inventory Management', 'Full visibility into every piece of equipment, decor, and resource.'),
+          ('Vendor & Supplier Network', 'Access to our trusted network of caterers, photographers, and suppliers.'),
+          ('Post-Event Reporting', 'Comprehensive debrief with photos, budgets, and team notes.'),
+        ] %}
+        {% for name, desc in features %}
+        <div class="feature-card">
+          <div class="feature-icon">
+            {% if loop.index == 1 %}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            {% elif loop.index == 2 %}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            {% elif loop.index == 3 %}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            {% elif loop.index == 4 %}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+            {% elif loop.index == 5 %}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            {% else %}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            {% endif %}
           </div>
-          <div class="hero-floater f2">
-            <div style="font-size:1.2rem;">✅</div>
-            <div style="font-weight:700;">All Set!</div>
-            <div style="color:rgba(255,255,255,.6);">12 tasks done</div>
-          </div>
+          <h3 class="feature-h3">{{ name }}</h3>
+          <p class="feature-p">{{ desc }}</p>
         </div>
+        {% endfor %}
       </div>
     </div>
   </div>
 </section>
 
-<section class="services" id="services">
-  <div class="container">
-    <div class="text-center mb-5">
-      <div class="section-label">What We Do</div>
-      <div class="section-title">Full-Service Event Management</div>
-      <div class="section-sub mx-auto">We take care of everything — from the first consultation to the last dance.</div>
+{# ── EVENT TYPES ─────────────────────────────────────────────── #}
+<section class="pub-section alt" id="events">
+  <div class="pub-section-inner">
+    <div style="text-align:center;margin-bottom:48px;">
+      <span class="pub-section-badge" style="display:block;text-align:center;">Event Types</span>
+      <h2 class="pub-section-h2" style="margin:0 auto 12px;max-width:520px;text-align:center;">Whatever the<br>occasion, we're ready.</h2>
     </div>
-    <div class="row g-4">
-      <div class="col-6 col-lg-3">
-        <div class="service-card">
-          <div class="service-icon">💍</div>
-          <h4>Weddings</h4>
-          <p>Intimate ceremonies to grand receptions — every detail handled with love.</p>
-        </div>
+    <div class="event-types-grid">
+      <div class="event-type-card wedding">
+        <span class="event-type-icon">💍</span>
+        <span class="event-type-name">Weddings</span>
+        <span class="event-type-desc">Intimate to grand ceremonies, fully handled.</span>
       </div>
-      <div class="col-6 col-lg-3">
-        <div class="service-card">
-          <div class="service-icon">🎂</div>
-          <h4>Debuts & Birthdays</h4>
-          <p>Make milestone celebrations unforgettable with our signature styling.</p>
-        </div>
+      <div class="event-type-card corp">
+        <span class="event-type-icon">🏢</span>
+        <span class="event-type-name">Corporate</span>
+        <span class="event-type-desc">Product launches, galas, and team events.</span>
       </div>
-      <div class="col-6 col-lg-3">
-        <div class="service-card">
-          <div class="service-icon">🏢</div>
-          <h4>Corporate Events</h4>
-          <p>Conferences, launches, and team events that leave a lasting impression.</p>
-        </div>
+      <div class="event-type-card birthday">
+        <span class="event-type-icon">🎂</span>
+        <span class="event-type-name">Birthdays</span>
+        <span class="event-type-desc">From kid parties to milestone celebrations.</span>
       </div>
-      <div class="col-6 col-lg-3">
-        <div class="service-card">
-          <div class="service-icon">🎉</div>
-          <h4>Special Occasions</h4>
-          <p>Reunions, graduations, christenings — no event is too big or too small.</p>
-        </div>
+      <div class="event-type-card debut">
+        <span class="event-type-icon">✨</span>
+        <span class="event-type-name">Debuts</span>
+        <span class="event-type-desc">18th birthday debuts with full production.</span>
       </div>
     </div>
   </div>
 </section>
 
-<section id="packages">
-  <div class="container">
-    <div class="text-center mb-5">
-      <div class="section-label">Our Offerings</div>
-      <div class="section-title">Choose Your Package</div>
-      <div class="section-sub mx-auto">Transparent pricing. No hidden fees. Just memories.</div>
+{# ── HOW IT WORKS ────────────────────────────────────────────── #}
+<section class="pub-section" id="about">
+  <div class="pub-section-inner">
+    <div style="text-align:center;margin-bottom:52px;">
+      <span class="pub-section-badge" style="display:block;text-align:center;">The Process</span>
+      <h2 class="pub-section-h2" style="text-align:center;margin:0 auto;max-width:460px;">From inquiry to<br>unforgettable moment.</h2>
     </div>
-    <div class="row g-4 justify-content-center">
-      <div class="col-12 col-md-6 col-lg-3">
-        <div class="pkg-card">
-          <div class="pkg-name">🥈 Silver</div>
-          <div class="pkg-price">₱25,000 <span>/ event</span></div>
-          <div class="pkg-desc">Perfect for small, intimate gatherings.</div>
-          <ul class="pkg-features">
-            <li>Up to 50 guests</li>
-            <li>1 Event Coordinator</li>
-            <li>Basic décor setup</li>
-            <li>4-hour coverage</li>
-            <li>Event timeline planning</li>
-          </ul>
-          <a href="#" data-bs-toggle="modal" data-bs-target="#orderRequestModal" class="btn-pkg">Book Now</a>
-        </div>
-      </div>
-      <div class="col-12 col-md-6 col-lg-3">
-        <div class="pkg-card featured">
-          <div class="pkg-badge">Most Popular</div>
-          <div class="pkg-name">🥇 Gold</div>
-          <div class="pkg-price">₱55,000 <span>/ event</span></div>
-          <div class="pkg-desc">Our most-loved package for mid-size events.</div>
-          <ul class="pkg-features">
-            <li>Up to 150 guests</li>
-            <li>2 Event Coordinators</li>
-            <li>Premium décor & styling</li>
-            <li>8-hour full coverage</li>
-            <li>Supplier coordination</li>
-            <li>Photo & video referral</li>
-          </ul>
-          <a href="#" data-bs-toggle="modal" data-bs-target="#orderRequestModal" class="btn-pkg">Book Now</a>
-        </div>
-      </div>
-      <div class="col-12 col-md-6 col-lg-3">
-        <div class="pkg-card">
-          <div class="pkg-name">💎 Platinum</div>
-          <div class="pkg-price">₱95,000 <span>/ event</span></div>
-          <div class="pkg-desc">For large-scale, premium celebrations.</div>
-          <ul class="pkg-features">
-            <li>Up to 300 guests</li>
-            <li>Full coordinator team</li>
-            <li>Luxury décor & florals</li>
-            <li>Full-day coverage</li>
-            <li>Dedicated account manager</li>
-            <li>Post-event report</li>
-          </ul>
-          <a href="#" data-bs-toggle="modal" data-bs-target="#orderRequestModal" class="btn-pkg">Book Now</a>
-        </div>
-      </div>
-      <div class="col-12 col-md-6 col-lg-3">
-        <div class="pkg-card">
-          <div class="pkg-name">⚡ Custom</div>
-          <div class="pkg-price">Let's Talk</div>
-          <div class="pkg-desc">Tailor-made for your unique vision.</div>
-          <ul class="pkg-features">
-            <li>Any guest count</li>
-            <li>Custom team size</li>
-            <li>Your theme, your way</li>
-            <li>Flexible hours</li>
-            <li>Full concierge service</li>
-            <li>Priority booking</li>
-          </ul>
-          <a href="#contact" class="btn-pkg">Contact Us</a>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
 
-<section class="portfolio" id="portfolio">
-  <div class="container">
-    <div class="text-center mb-5">
-      <div class="section-label">Our Work</div>
-      <div class="section-title">Recent Events</div>
-      <div class="section-sub mx-auto">A glimpse into the memories we've helped create.</div>
-    </div>
-    <div class="row g-4">
-      <div class="col-12 col-md-6 col-lg-4">
-        <div class="port-card">
-          <div class="port-img">💍</div>
-          <div class="port-body">
-            <div class="port-type">Wedding</div>
-            <div class="port-title">The Cruz–Santos Wedding</div>
-            <div class="port-desc">A romantic garden ceremony for 200 guests in Tagaytay with a blush and gold theme.</div>
-          </div>
-        </div>
-      </div>
-      <div class="col-12 col-md-6 col-lg-4">
-        <div class="port-card">
-          <div class="port-img">🎂</div>
-          <div class="port-body">
-            <div class="port-type">Debut</div>
-            <div class="port-title">Sophia's Grand Debut</div>
-            <div class="port-desc">An enchanted forest-themed debut with 18 roses, 18 candles, and 300 guests.</div>
-          </div>
-        </div>
-      </div>
-      <div class="col-12 col-md-6 col-lg-4">
-        <div class="port-card">
-          <div class="port-img">🏢</div>
-          <div class="port-body">
-            <div class="port-type">Corporate</div>
-            <div class="port-title">TechCorp Product Launch</div>
-            <div class="port-desc">Full AV production, stage design, and supplier management for a 500-person launch event.</div>
-          </div>
-        </div>
-      </div>
-      <div class="col-12 col-md-6 col-lg-4">
-        <div class="port-card">
-          <div class="port-img">🥂</div>
-          <div class="port-body">
-            <div class="port-type">Anniversary</div>
-            <div class="port-title">Dela Rosa 25th Anniversary</div>
-            <div class="port-desc">Silver anniversary celebration with a surprise program and custom backdrop design.</div>
-          </div>
-        </div>
-      </div>
-      <div class="col-12 col-md-6 col-lg-4">
-        <div class="port-card">
-          <div class="port-img">🎓</div>
-          <div class="port-body">
-            <div class="port-type">Graduation</div>
-            <div class="port-title">Batch 2024 Grad Party</div>
-            <div class="port-desc">A festive outdoor graduation party with photo booth, food trucks, and live band.</div>
-          </div>
-        </div>
-      </div>
-      <div class="col-12 col-md-6 col-lg-4">
-        <div class="port-card">
-          <div class="port-img">🙏</div>
-          <div class="port-body">
-            <div class="port-type">Christening</div>
-            <div class="port-title">Baby Lorenzo's Christening</div>
-            <div class="port-desc">A whimsical woodland-themed christening for 120 guests with custom centerpieces.</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0;position:relative;">
+      {# Connecting line #}
+      <div style="position:absolute;top:28px;left:calc(12.5%);right:calc(12.5%);height:1px;background:linear-gradient(90deg,var(--admin-border),var(--brand),var(--admin-border));z-index:0;" class="d-none d-lg-block"></div>
 
-<section class="whyus">
-  <div class="container">
-    <div class="row align-items-center g-5">
-      <div class="col-lg-5">
-        <div class="section-label">Why Metro Events</div>
-        <div class="section-title">We Don't Just Plan Events. We Create Experiences.</div>
-        <div class="section-sub">Our team of dedicated professionals brings creativity, precision, and passion to every event we touch.</div>
-      </div>
-      <div class="col-lg-7">
-        <div class="why-item">
-          <div class="why-icon">🎯</div>
-          <div>
-            <h5>Attention to Detail</h5>
-            <p>We obsess over every element — from table settings to sound checks — so nothing is left to chance.</p>
-          </div>
-        </div>
-        <div class="why-item">
-          <div class="why-icon">💬</div>
-          <div>
-            <h5>Dedicated Client Portal</h5>
-            <p>Track your event progress, payments, and timelines in real-time through your personal client dashboard.</p>
-          </div>
-        </div>
-        <div class="why-item">
-          <div class="why-icon">🤝</div>
-          <div>
-            <h5>Trusted Supplier Network</h5>
-            <p>We work with the best photographers, caterers, and florists — so you always get top quality.</p>
-          </div>
-        </div>
-        <div class="why-item">
-          <div class="why-icon">📱</div>
-          <div>
-            <h5>Always Reachable</h5>
-            <p>Your coordinator is just a message away. We're here whenever you need us, day or night.</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section id="testimonials">
-  <div class="container">
-    <div class="text-center mb-5">
-      <div class="section-label">Client Love</div>
-      <div class="section-title">What Our Clients Say</div>
-    </div>
-    
-    <div class="row g-4">
-      {% for rev in reviews %}
-      <div class="col-12 col-md-6 col-lg-4">
-        <div class="testi-card h-100 shadow-sm border-0" style="border-radius: 15px; background: #fff; padding: 30px;">
-          <div class="testi-stars" style="color: var(--gold); margin-bottom: 15px; font-size: 0.9rem;">
-            {% for i in range(rev.rating) %}★{% endfor %}
-          </div>
-          <p class="testi-text" style="font-style: italic; color: var(--text); line-height: 1.7; margin-bottom: 20px;">
-            "{{ rev.comment }}"
-          </p>
-          <div class="testi-name" style="font-weight: 800; color: var(--dark); font-size: 0.9rem;">
-            {{ rev.client.full_name }}
-          </div>
-          <div class="testi-event" style="font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em;">
-            Verified Client • {{ rev.created_at.strftime('%b %Y') }}
-          </div>
-        </div>
-      </div>
-      {% else %}
-      <div class="col-12 text-center py-5">
-        <p class="text-muted">Real stories from our clients will appear here soon. ✨</p>
+      {% set steps = [
+        ('01', 'Inquiry', 'Contact us and share your vision. We\'ll schedule a consultation call within 24 hours.'),
+        ('02', 'Proposal', 'Receive a detailed quote and event plan tailored to your needs and budget.'),
+        ('03', 'Planning', 'Your dedicated coordinator and client portal are activated. Real-time updates, always.'),
+        ('04', 'Event Day', 'We handle every detail on the ground so you can be fully present for every moment.'),
+      ] %}
+      {% for num, title, desc in steps %}
+      <div style="text-align:center;padding:0 20px;position:relative;z-index:1;">
+        <div style="width:56px;height:56px;background:{% if loop.index <= 2 %}linear-gradient(135deg,var(--brand),var(--brand-dark)){% else %}var(--admin-overlay){% endif %};border:2px solid {% if loop.index <= 2 %}var(--brand){% else %}var(--admin-border){% endif %};border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-family:'Sora',sans-serif;font-size:14px;font-weight:800;color:{% if loop.index <= 2 %}#fff{% else %}var(--admin-text-muted){% endif %};">{{ num }}</div>
+        <h4 style="font-family:'Sora',sans-serif;font-size:16px;font-weight:700;color:hsl(222,47%,11%);margin:0 0 8px;letter-spacing:-0.01em;">{{ title }}</h4>
+        <p style="font-family:'DM Sans',sans-serif;font-size:13.5px;color:hsl(220,14%,50%);line-height:1.65;margin:0;">{{ desc }}</p>
       </div>
       {% endfor %}
     </div>
-
-    {% if current_user.is_authenticated %}
-    <div class="text-center mt-5">
-      <button class="btn btn-outline-gold btn-sm px-4" data-bs-toggle="modal" data-bs-target="#reviewModal">
-        🌟 Share Your Experience
-      </button>
-    </div>
-    {% endif %}
   </div>
 </section>
 
-<section class="cta-section" id="contact">
-  <div class="container">
-    <h2>Ready to Start <span>Planning?</span></h2>
-    <p>Let's turn your dream event into reality. Get started today — it only takes a minute.</p>
-    <div class="d-flex justify-content-center gap-3 flex-wrap">
-      {% if current_user.is_authenticated %}
-        <a href="#" class="btn-hero-primary" data-bs-toggle="modal" data-bs-target="#orderRequestModal">Create Order Request</a>
+{# ── CTA BANNER ──────────────────────────────────────────────── #}
+<section class="pub-cta-section">
+  <div class="pub-cta-inner">
+    <span style="display:block;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:var(--brand);margin-bottom:12px;">Ready to Begin?</span>
+    <h2 class="pub-cta-h2">Let's create something<br><em style="color:var(--brand);font-style:normal;">unforgettable.</em></h2>
+    <p class="pub-cta-p">Join hundreds of clients who've trusted Metro Events with their most important celebrations. Your journey starts with a single click.</p>
+    <div class="pub-cta-actions">
+      {% if not current_user.is_authenticated %}
+        <a href="{{ url_for('client_auth.register') }}" class="btn-hero-primary">
+          Create Your Account
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+        </a>
+        <a href="{{ url_for('client_auth.login') }}" class="btn-hero-secondary">Client Login</a>
       {% else %}
-        <a href="{{ url_for('auth.register') }}" class="btn-hero-primary">Create Free Account</a>
-        <a href="{{ url_for('auth.login') }}" class="btn-hero-secondary">Already a client? Login</a>
+        <a href="{{ url_for('portal.home') if current_user.role == 'client' else url_for('dashboard.index') }}" class="btn-hero-primary">
+          Go to My Portal
+        </a>
       {% endif %}
     </div>
   </div>
 </section>
 
-<footer>
-  <div class="container">
-    <div class="row g-4 mb-4">
-      <div class="col-12 col-md-4">
-        <div class="brand mb-2"><span>⚡</span> {{ APP_NAME }}</div>
-        <div style="font-size:.8rem; color:rgba(255,255,255,.4); line-height:1.7;">
-          Creating unforgettable memories<br>one event at a time.
-        </div>
+{# ── FOOTER ──────────────────────────────────────────────────── #}
+<footer class="pub-footer">
+  <div class="pub-footer-inner">
+    <div class="pub-footer-grid">
+      <div>
+        <a href="{{ url_for('public.index') }}" style="display:inline-flex;align-items:center;gap:10px;text-decoration:none;margin-bottom:14px;">
+          <div style="width:30px;height:30px;background:linear-gradient(135deg,var(--brand),var(--brand-dark));border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+          </div>
+          <span style="font-size:16px;font-weight:700;color:#fff;">{{ APP_NAME }}</span>
+        </a>
+        <p class="pub-footer-brand-desc">{{ APP_TAGLINE }}. Professional event management trusted by hundreds of families and corporations across the Philippines.</p>
       </div>
-      <div class="col-6 col-md-2">
-        <div style="color:rgba(255,255,255,.7);font-weight:600;font-size:.8rem;margin-bottom:10px;">Services</div>
-        <div><a href="#services">Weddings</a></div>
-        <div><a href="#services">Debuts</a></div>
-        <div><a href="#services">Corporate</a></div>
-        <div><a href="#services">Special Events</a></div>
+      <div>
+        <div class="pub-footer-col-title">Platform</div>
+        <ul class="pub-footer-links">
+          <li><a href="{{ url_for('client_auth.login') }}">Client Portal</a></li>
+          <li><a href="{{ url_for('auth.login') }}">Team Login</a></li>
+          <li><a href="{{ url_for('client_auth.register') }}">Create Account</a></li>
+        </ul>
       </div>
-      <div class="col-6 col-md-2">
-        <div style="color:rgba(255,255,255,.7);font-weight:600;font-size:.8rem;margin-bottom:10px;">Account</div>
-        <div><a href="{{ url_for('auth.login') }}">Login</a></div>
-        <div><a href="{{ url_for('auth.register') }}">Register</a></div>
-        <div><a href="#packages">Packages</a></div>
-      </div>
-      <div class="col-12 col-md-4">
-        <div style="color:rgba(255,255,255,.7);font-weight:600;font-size:.8rem;margin-bottom:10px;">Contact Us</div>
-        <div>📧 hello@metroevents.com</div>
-        <div style="margin-top:4px;">📞 +63 912 345 6789</div>
-        <div style="margin-top:4px;">📍 Metro Manila, Philippines</div>
+      <div>
+        <div class="pub-footer-col-title">Contact</div>
+        <ul class="pub-footer-links">
+          <li><a href="mailto:hello@metroevents.com">hello@metroevents.com</a></li>
+          <li><a href="tel:+6329001234">+63 2 900 1234</a></li>
+          <li><a href="#">Metro Manila, Philippines</a></li>
+        </ul>
       </div>
     </div>
-    <hr>
-    <div class="text-center" style="font-size:.75rem;">
-      © {{ 2026 }} {{ APP_NAME }}. All rights reserved. Made with ❤️ in the Philippines.
+    <div class="pub-footer-bottom">
+      <div class="pub-footer-copy">&copy; 2025 {{ APP_NAME }}. All rights reserved.</div>
+      <div style="display:flex;gap:16px;">
+        <a href="#" style="font-family:'DM Sans',sans-serif;font-size:12px;color:rgba(255,255,255,0.3);text-decoration:none;transition:color 0.18s;" onmouseover="this.style.color='var(--brand)'" onmouseout="this.style.color='rgba(255,255,255,0.3)'">Privacy</a>
+        <a href="#" style="font-family:'DM Sans',sans-serif;font-size:12px;color:rgba(255,255,255,0.3);text-decoration:none;transition:color 0.18s;" onmouseover="this.style.color='var(--brand)'" onmouseout="this.style.color='rgba(255,255,255,0.3)'">Terms</a>
+      </div>
     </div>
   </div>
 </footer>
 
-<div class="modal fade" id="orderRequestModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content shadow border-0" style="border-radius: 20px; background: #fff;">
-      <div class="modal-header border-0 pb-0 p-4">
-        <h4 class="modal-title fw-bold" style="color: var(--dark);">Create Order Request</h4>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      
-      <form action="{{ url_for('public.submit_request') }}" method="POST">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-        <div class="modal-body p-4">
-          <p class="text-muted small mb-4">Please provide your details so our team can reach out to you.</p>
-
-          <div class="mb-3">
-              <label class="form-label fw-bold small text-uppercase">Phone Number</label>
-              <input type="text" name="phone" class="form-control border-0 bg-light p-3" 
-                     placeholder="0917-XXX-XXXX" value="{{ current_user.phone or '' }}" required>
-          </div>
-
-          <div class="mb-3">
-              <label class="form-label fw-bold small text-uppercase">Target Event Date</label>
-              <input type="date" name="event_date" class="form-control border-0 bg-light p-3" required>
-          </div>
-
-          <div class="row">
-              <div class="col-md-6 mb-3">
-                  <label class="form-label fw-bold small text-uppercase">Package</label>
-                  <select name="package_type" class="form-select border-0 bg-light p-3" required>
-                      <option value="Silver">🥈 Silver</option>
-                      <option value="Gold">🥇 Gold</option>
-                      <option value="Platinum">💎 Platinum</option>
-                      <option value="Custom">⚡ Custom</option>
-                  </select>
-              </div>
-              <div class="col-md-6 mb-3">
-                  <label class="form-label fw-bold small text-uppercase">Request Status</label>
-                  <select name="initial_status" class="form-select border-0 bg-light p-3">
-                      <option value="new_inquiry">Just Inquiring</option>
-                      <option value="planning">Ready to Plan</option>
-                      <option value="urgent">Urgent / Immediate</option>
-                  </select>
-              </div>
-          </div>
-
-          <div class="mb-3">
-              <label class="form-label fw-bold small text-uppercase">Your Message/Vision</label>
-              <textarea name="client_message" class="form-control border-0 bg-light p-3" rows="3" 
-                        placeholder="Tell us more about your dream event..." required></textarea>
-          </div>
-        </div>
-        <div class="modal-footer border-0 p-4 pt-0">
-          <button type="submit" class="btn-hero-primary px-4 py-2 m-0 shadow-sm" style="width: auto; background: var(--gold); border: none; border-radius: 10px; font-weight: 700; color: var(--dark);">Submit Request ⚡</button>
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
-  <div class="modal fade" id="reviewModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content shadow border-0" style="border-radius: 20px; background: #fff;">
-      <div class="modal-header border-0 pb-0 p-4">
-        <h4 class="modal-title fw-bold" style="color: var(--dark);">Share Your Experience</h4>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      
-      <form action="{{ url_for('public.submit_review') }}" method="POST">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-        <div class="modal-body p-4">
-            <p class="text-muted small mb-4">We value your feedback! How did we do with your event?</p>
-            
-            <div class="mb-3">
-                <label class="form-label fw-bold small text-uppercase">Rating</label>
-                <select name="rating" class="form-select border-0 bg-light p-3" style="border-radius: 10px;" required>
-                    <option value="5">⭐⭐⭐⭐⭐ (Excellent)</option>
-                    <option value="4">⭐⭐⭐⭐ (Great)</option>
-                    <option value="3">⭐⭐⭐ (Good)</option>
-                    <option value="2">⭐⭐ (Fair)</option>
-                    <option value="1">⭐ (Poor)</option>
-                </select>
-            </div>
-            
-            <div class="mb-3">
-                <label class="form-label fw-bold small text-uppercase">Your Review</label>
-                <textarea name="comment" class="form-control border-0 bg-light p-3" rows="4" 
-                          placeholder="What did you love about working with Metro Events?" style="border-radius: 10px;" required></textarea>
-            </div>
-        </div>
-        <div class="modal-footer border-0 p-4 pt-0">
-          <button type="button" class="btn btn-light px-4 py-2" style="border-radius: 10px;" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn-hero-primary px-4 py-2 m-0 shadow-sm" style="width: auto; background: var(--gold); border: none; border-radius: 10px; font-weight: 700; color: var(--dark);">Post Review ✨</button>
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
-
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+{# Smooth scroll for anchor links #}
 <script>
-  document.querySelectorAll('a[href^="#"]').forEach(a => {
-    a.addEventListener('click', e => {
-      const href = a.getAttribute('href');
-      if (href !== '#') {
-        const target = document.querySelector(href);
-        if (target) { e.preventDefault(); target.scrollIntoView({ behavior: 'smooth' }); }
-      }
-    });
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+  a.addEventListener('click', e => {
+    const target = document.querySelector(a.getAttribute('href'));
+    if (target) {
+      e.preventDefault();
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   });
+});
 </script>
 </body>
 </html>
