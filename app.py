@@ -95,32 +95,48 @@ def create_app(config_name: str = "default") -> Flask:
     @app.context_processor
     def inject_globals():
         from flask_login import current_user
-        from datetime import date, timedelta
+        from datetime import datetime, date, timedelta
+
+        today = datetime.now()  # available everywhere as {{ today }}
 
         base = {
             "APP_NAME":       app.config["APP_NAME"],
             "APP_TAGLINE":    app.config["APP_TAGLINE"],
+            "today":          today,
             "overdue_count":  0,
             "due_soon_count": 0,
+            "new_inquiries":  0,
         }
 
         if current_user.is_authenticated:
             from models.payment import Payment
-            today = date.today()
-            in_3  = today + timedelta(days=3)
+            today_date = today.date()
+            in_3       = today_date + timedelta(days=3)
+
             base["overdue_count"] = (
                 Payment.query
                 .filter(Payment.status == "pending",
-                        Payment.due_date < today)
+                        Payment.due_date < today_date)
                 .count()
             )
             base["due_soon_count"] = (
                 Payment.query
                 .filter(Payment.status == "pending",
-                        Payment.due_date >= today,
+                        Payment.due_date >= today_date,
                         Payment.due_date <= in_3)
                 .count()
             )
+
+            # new_inquiries: clients still in the first pipeline stage.
+            # Only runs for non-client roles to avoid a query on every
+            # client portal page load.
+            if current_user.role != "client":
+                from models.client import Client
+                base["new_inquiries"] = (
+                    Client.query
+                    .filter(Client.pipeline_stage == "inquiry")
+                    .count()
+                )
 
         return base
 
