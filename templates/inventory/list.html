@@ -1,128 +1,168 @@
 {% extends "base.html" %}
 {% block title %}Inventory{% endblock %}
-{% block page_title %}Inventory{% endblock %}
-
-{% block breadcrumb %}
-  <a href="{{ url_for('dashboard.index') }}">Dashboard</a> → Inventory
-{% endblock %}
-
+{% block page_title %}Resource Inventory{% endblock %}
+{% block breadcrumb %}Manage stock levels and reservations{% endblock %}
 {% block topbar_actions %}
-  <a href="{{ url_for('inventory.new_item') }}" class="btn-gold">➕ Add Item</a>
+<a href="{{ url_for('inventory.new_item') }}" class="btn-me btn-gold">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add Item
+</a>
 {% endblock %}
-
 {% block content %}
-<div class="d-flex gap-2 mb-4 flex-wrap">
-  <form class="d-flex gap-2" method="GET" action="{{ url_for('inventory.list_items') }}">
-    <input type="text" name="q" class="me-form-control" placeholder="Search gear..."
-           value="{{ search or '' }}" style="width:220px;" />
-    
-    <select name="cat" class="me-form-control" style="width:160px;">
-      <option value="">All Categories</option>
-      {% for c in categories %}
-      <option value="{{ c }}" {{ 'selected' if cat_filter == c }}>{{ c|title }}</option>
-      {% endfor %}
-    </select>
-    
-    <button type="submit" class="btn-gold" style="padding: 0 20px;">Filter</button>
-    
-    {% if search or cat_filter %}
-      <a href="{{ url_for('inventory.list_items') }}" class="btn btn-outline-secondary">Reset</a>
-    {% endif %}
-  </form>
-</div>
 
-<div class="row g-3">
-  {% for item in items.items %}
-  <div class="col-6 col-md-4 col-lg-3">
-    <div class="me-card h-100" style="position: relative; transition:.2s; overflow: visible;" 
-         onmouseover="this.style.transform='translateY(-3px)'" 
-         onmouseout="this.style.transform=''">
-      
-      {% if current_user.is_admin or current_user.is_warehouse %}
-      <div class="dropdown" style="position: absolute; top: 10px; right: 10px; z-index: 100;">
-        <button class="btn btn-sm btn-light shadow-sm border" type="button" 
-                data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" 
-                style="border-radius: 50%; width: 32px; height: 32px; padding: 0; background: rgba(255,255,255,0.9);">
-          ⋮
-        </button>
-        <ul class="dropdown-menu dropdown-menu-end shadow border-0" style="font-size: 0.85rem;">
-          <li>
-            <a class="dropdown-item" href="{{ url_for('inventory.edit_item', item_id=item.id) }}">
-              ✏️ Edit Details
-            </a>
-          </li>
-          <li><hr class="dropdown-divider"></li>
-          <li>
-            <form action="{{ url_for('inventory.delete_item', item_id=item.id) }}" method="POST" 
-                  onsubmit="return confirm('Permanently remove {{ item.name }} from inventory?');">
-              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-              <button type="submit" class="dropdown-item text-danger">🗑 Delete Item</button>
-            </form>
-          </li>
-        </ul>
-      </div>
-      {% endif %}
-
-      <a href="{{ url_for('inventory.detail', item_id=item.id) }}" class="text-decoration-none">
-        {% if item.photo_url %}
-        <img src="{{ item.photo_url }}" alt="{{ item.name }}"
-             style="width:100%; height:140px; object-fit:cover; border-radius: 12px 12px 0 0;"
-             onerror="this.src='/static/img/no-image.svg'" />
-        {% else %}
-        <div style="height:120px; background: linear-gradient(135deg,#1A1A2E,#0F3460); display:flex; align-items:center; justify-content:center; font-size:2.5rem; border-radius: 12px 12px 0 0;">
-          📦
-        </div>
-        {% endif %}
-
-        <div class="me-card-body">
-          <div style="font-weight:700; font-size:0.95rem; color:#1A1A2E; line-height: 1.2;" class="mb-1">
-            {{ item.name }}
-          </div>
-          <div class="text-muted-sm mb-3" style="font-size: 0.8rem;">{{ item.category|title }}</div>
-
-          <div class="d-flex justify-content-between align-items-center mt-auto">
-            <span class="badge {{ 'bg-danger' if item.available_qty == 0 else ('bg-warning text-dark' if item.available_qty <= 2 else 'bg-success') }}" 
-                  style="font-size: 0.7rem; padding: 4px 7px;">
-              {{ item.available_qty }}/{{ item.total_qty }} avail
-            </span>
-            
-            <span class="text-muted-sm" style="font-size: 0.75rem;">
-              {{ item.condition|title }}
-            </span>
-          </div>
-
-          {% if item.sku %}
-          <div class="text-muted-sm mt-2" style="font-size: 0.65rem; opacity: 0.7;">
-            SKU: {{ item.sku }}
-          </div>
-          {% endif %}
-        </div>
-      </a>
+{# Stats row #}
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px;">
+  {% for label, val, color in [
+    ('Total Items',   total_items,   'gold'),
+    ('Available',     total_available, 'green'),
+    ('Low Stock',     low_stock_count, 'red'),
+    ('Categories',    category_count, 'blue'),
+  ] %}
+  <div class="me-card" style="padding:16px 18px;display:flex;align-items:center;gap:14px;">
+    <div class="kpi-icon {{ color }}">
+      {% if color == 'gold' %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+      {% elif color == 'green' %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+      {% elif color == 'red' %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      {% else %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>{% endif %}
     </div>
-  </div>
-  {% else %}
-  <div class="col-12 text-center py-5">
-    <h5 class="text-muted">No gear found matching that search.</h5>
-    <a href="{{ url_for('inventory.list_items') }}" class="btn btn-link text-gold">Reset filters</a>
+    <div>
+      <div class="kpi-value" style="font-size:24px;">{{ val }}</div>
+      <div class="kpi-label">{{ label }}</div>
+    </div>
   </div>
   {% endfor %}
 </div>
 
-{% if items.pages > 1 %}
-<nav class="mt-5 d-flex justify-content-center">
-  <div class="pagination-container d-flex gap-1">
-    {% for p in items.iter_pages() %}
-      {% if p %}
-        <a href="{{ url_for('inventory.list_items', page=p, cat=cat_filter, q=search) }}"
-           class="btn btn-sm {{ 'btn-dark' if p == items.page else 'btn-outline-secondary' }}"
-           style="width: 35px; height: 35px; display: flex; align-items: center; justify-content: center;">
-           {{ p }}
-        </a>
-      {% else %}
-        <span class="btn btn-sm disabled">...</span>
-      {% endif %}
-    {% endfor %}
+{# Filters #}
+<div class="me-card mb-4" style="padding:14px 18px;">
+  <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+    <div style="position:relative;flex:1;min-width:180px;">
+      <svg style="position:absolute;left:12px;top:50%;transform:translateY(-50%);width:14px;height:14px;color:var(--admin-text-muted);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" id="invSearch" class="me-input" placeholder="Search items…" onkeyup="filterInventory()" style="padding-left:36px;" />
+    </div>
+    <select id="catFilter" class="me-select" onchange="filterInventory()" style="width:160px;">
+      <option value="">All Categories</option>
+      {% for cat in categories %}
+      <option value="{{ cat }}" {{ 'selected' if cat_filter == cat }}>{{ cat | title }}</option>
+      {% endfor %}
+    </select>
+    <select id="stockFilter" class="me-select" onchange="filterInventory()" style="width:140px;">
+      <option value="">All Stock</option>
+      <option value="ok">In Stock</option>
+      <option value="low">Low Stock</option>
+      <option value="none">Out of Stock</option>
+    </select>
+    <div style="display:flex;gap:6px;">
+      <button onclick="setView('grid')" id="btnGrid" class="btn-icon active" title="Grid view" style="background:var(--admin-overlay);">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      </button>
+      <button onclick="setView('table')" id="btnTable" class="btn-icon" title="Table view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+      </button>
+    </div>
   </div>
-</nav>
-{% endif %}
+</div>
+
+{# Grid view #}
+<div id="gridView" class="inventory-grid">
+  {% for item in items %}
+  {% set stock_class = 'none' if item.available_qty == 0 else ('low' if item.available_qty <= item.reorder_level else 'ok') %}
+  <a href="{{ url_for('inventory.detail', item_id=item.id) }}" class="inventory-card"
+     data-name="{{ item.name | lower }}" data-cat="{{ item.category | lower }}" data-stock="{{ stock_class }}">
+    <div class="inventory-card-img">
+      {% if item.image_url %}<img src="{{ item.image_url }}" alt="{{ item.name }}" onerror="this.parentElement.innerHTML='<svg viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'1\' style=\'width:40px;height:40px;opacity:.2;color:#fff\'><path d=\'M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z\'/></svg>'" />
+      {% else %}
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+      {% endif %}
+    </div>
+    <div class="inventory-card-body">
+      <div class="inventory-card-name">{{ item.name }}</div>
+      <div class="inventory-card-cat">{{ item.category or 'Uncategorized' }}</div>
+    </div>
+    <div class="inventory-card-footer">
+      <span class="stock-badge {{ stock_class }}">
+        {{ item.available_qty }} / {{ item.total_qty }}
+      </span>
+      <span style="font-size:11px;color:var(--admin-text-muted);">avail.</span>
+    </div>
+  </a>
+  {% else %}
+  <div class="me-empty" style="grid-column:1/-1;">
+    <div class="me-empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg></div>
+    <h6>No inventory items</h6><p>Add your first item to get started.</p>
+    <a href="{{ url_for('inventory.new_item') }}" class="btn-me btn-gold">Add Item</a>
+  </div>
+  {% endfor %}
+</div>
+
+{# Table view (hidden by default) #}
+<div id="tableView" style="display:none;">
+  <div class="me-card">
+    <div class="me-card-body p-0">
+      <div class="me-table-wrap">
+      <table class="me-table">
+        <thead><tr><th>Item</th><th>Category</th><th>Total</th><th>Available</th><th>Reserved</th><th>Reorder At</th><th>Stock</th><th></th></tr></thead>
+        <tbody>
+          {% for item in items %}
+          {% set stock_class = 'none' if item.available_qty == 0 else ('low' if item.available_qty <= item.reorder_level else 'ok') %}
+          <tr data-name="{{ item.name | lower }}" data-cat="{{ item.category | lower }}" data-stock="{{ stock_class }}">
+            <td><div class="event-name">{{ item.name }}</div></td>
+            <td><span class="tag gray">{{ item.category or '—' }}</span></td>
+            <td><strong>{{ item.total_qty }}</strong></td>
+            <td><strong style="color:{{ 'var(--success)' if stock_class == 'ok' else ('var(--warning)' if stock_class == 'low' else 'var(--danger)') }};">{{ item.available_qty }}</strong></td>
+            <td>{{ item.reserved_qty or 0 }}</td>
+            <td class="text-primary-sm">{{ item.reorder_level }}</td>
+            <td><span class="stock-badge {{ stock_class }}">{{ 'In Stock' if stock_class == 'ok' else ('Low' if stock_class == 'low' else 'Out') }}</span></td>
+            <td>
+              <div class="me-table-actions">
+                <a href="{{ url_for('inventory.detail', item_id=item.id) }}" class="btn-icon" title="View"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></a>
+                <a href="{{ url_for('inventory.edit_item', item_id=item.id) }}" class="btn-icon" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></a>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="noInvResults" class="me-empty" style="display:none;">
+  <div class="me-empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+  <h6>No items match your filters</h6>
+  <button class="btn-me btn-outline-me btn-sm-me" onclick="clearInvFilters()">Clear filters</button>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+let currentView = 'grid';
+function setView(v) {
+  currentView = v;
+  document.getElementById('gridView').style.display  = v === 'grid'  ? '' : 'none';
+  document.getElementById('tableView').style.display = v === 'table' ? '' : 'none';
+  document.getElementById('btnGrid').style.background  = v === 'grid'  ? 'var(--brand-light)' : '';
+  document.getElementById('btnTable').style.background = v === 'table' ? 'var(--brand-light)' : '';
+}
+function filterInventory() {
+  const q     = document.getElementById('invSearch').value.toLowerCase();
+  const cat   = document.getElementById('catFilter').value.toLowerCase();
+  const stock = document.getElementById('stockFilter').value;
+  const cards = document.querySelectorAll('#gridView .inventory-card, #tableView tbody tr');
+  let vis = 0;
+  cards.forEach(el => {
+    const match = (!q || el.dataset.name.includes(q))
+               && (!cat   || el.dataset.cat   === cat)
+               && (!stock || el.dataset.stock === stock);
+    el.style.display = match ? '' : 'none';
+    if (match) vis++;
+  });
+  document.getElementById('noInvResults').style.display = vis === 0 ? 'block' : 'none';
+}
+function clearInvFilters() {
+  document.getElementById('invSearch').value = '';
+  document.getElementById('catFilter').value = '';
+  document.getElementById('stockFilter').value = '';
+  filterInventory();
+}
+</script>
 {% endblock %}

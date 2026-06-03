@@ -1,150 +1,139 @@
 {% extends "base.html" %}
-
-{% block title %}{{ item.name }} — Inventory{% endblock %}
-
+{% block title %}{{ item.name }}{% endblock %}
 {% block page_title %}{{ item.name }}{% endblock %}
-
-{% block breadcrumb %}
-  <a href="{{ url_for('inventory.list_items') }}">Inventory</a> → {{ item.name }}
+{% block breadcrumb %}<a href="{{ url_for('inventory.list_items') }}" style="color:inherit;">Inventory</a> / Item Detail{% endblock %}
+{% block topbar_actions %}
+<a href="{{ url_for('inventory.edit_item', item_id=item.id) }}" class="btn-me btn-outline-me">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+  Edit Item
+</a>
 {% endblock %}
-
-{# We are leaving this empty to ensure it doesn't conflict with anything #}
-{% block topbar_actions %}{% endblock %}
-
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4 p-3 bg-white shadow-sm rounded border">
-  <div>
-    <h2 class="mb-0" style="font-weight: 800; color: #1A1A2E;">{{ item.name }}</h2>
-    <span class="text-muted" style="font-size: 0.85rem;">Product Management Workspace</span>
-  </div>
-  
-  <div class="d-flex gap-2">
-    <a href="{{ url_for('inventory.edit_item', item_id=item.id) }}" class="btn-gold" style="text-decoration:none; padding: 10px 20px;">
-      <i class="fas fa-edit me-1"></i> Edit Details
-    </a>
-
-    <form action="{{ url_for('inventory.delete_item', item_id=item.id) }}" method="POST" 
-          onsubmit="return confirm('WARNING: This will permanently remove {{ item.name }} from the inventory. Proceed?');">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-      <button type="submit" class="btn btn-outline-danger" style="padding: 10px 20px;">
-        <i class="fas fa-trash-alt me-1"></i> Delete Item
-      </button>
-    </form>
-  </div>
-</div>
+{% set stock_class = 'none' if item.available_qty == 0 else ('low' if item.available_qty <= item.reorder_level else 'ok') %}
 
 <div class="row g-4">
   <div class="col-lg-4">
-    <div class="me-card mb-4">
-      {% if item.photo_url %}
-      <img src="{{ item.photo_url }}" alt="{{ item.name }}"
-           style="width:100%; height:220px; object-fit:cover; border-radius: 12px 12px 0 0;"
-           onerror="this.src='/static/img/no-image.svg'" />
+    <div class="me-card mb-4" style="overflow:hidden;">
+      {% if item.image_url %}
+      <img src="{{ item.image_url }}" alt="{{ item.name }}" style="width:100%;height:220px;object-fit:cover;display:block;" onerror="this.style.display='none'" />
       {% else %}
-      <div style="height:150px; background: linear-gradient(135deg,#1A1A2E,#0F3460); display:flex; align-items:center; justify-content:center; font-size:3rem; border-radius: 12px 12px 0 0;">
-        📦
+      <div style="height:180px;background:linear-gradient(135deg,var(--admin-sidebar),hsl(222,47%,22%));display:flex;align-items:center;justify-content:center;">
+        <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="1"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
       </div>
       {% endif %}
-      
-      <div class="me-card-body">
-        <h5 class="mb-1" style="font-weight: 800;">{{ item.name }}</h5>
-        <div class="text-muted-sm mb-3">
-          {{ item.category|title }} {% if item.sku %}· <span class="badge bg-light text-dark border">SKU: {{ item.sku }}</span>{% endif %}
+      <div style="padding:20px;">
+        <div style="font-size:18px;font-weight:800;color:var(--admin-text);margin-bottom:6px;letter-spacing:-.02em;">{{ item.name }}</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+          {% if item.category %}<span class="tag gray">{{ item.category | title }}</span>{% endif %}
+          <span class="stock-badge {{ stock_class }}">{{ 'In Stock' if stock_class=='ok' else ('Low Stock' if stock_class=='low' else 'Out of Stock') }}</span>
         </div>
-
-        <div class="row g-2 mb-4">
-          <div class="col-6">
-            <div style="background:#F9F6EF; border-radius:10px; padding:15px; text-align:center; border: 1px solid #eee;">
-              <div style="font-size:1.8rem; font-weight:800; color:#1A1A2E;">{{ item.total_qty }}</div>
-              <div class="text-muted-sm" style="font-size: 0.7rem; text-transform: uppercase;">Total Stock</div>
-            </div>
-          </div>
-          <div class="col-6">
-            <div style="background:{{ '#FFF5F5' if item.available_qty == 0 else '#F0FFF4' }}; border-radius:10px; padding:15px; text-align:center; border: 1px solid {{ '#FED7D7' if item.available_qty == 0 else '#C6F6D5' }};">
-              <div style="font-size:1.8rem; font-weight:800; color:{{ '#F56565' if item.available_qty == 0 else '#48BB78' }};">
-                {{ item.available_qty }}
-              </div>
-              <div class="text-muted-sm" style="font-size: 0.7rem; text-transform: uppercase;">Available</div>
-            </div>
-          </div>
-        </div>
-
-        {% macro irow(icon, label, val) %}
-        <div class="d-flex gap-2 mb-2" style="font-size:.875rem;">
-          <span style="width: 20px; text-align: center;">{{ icon }}</span>
-          <div><span style="color:#8896A5;">{{ label }}:</span> <strong>{{ val or '—' }}</strong></div>
-        </div>
-        {% endmacro %}
-
-        {{ irow('📐', 'Dimensions', item.dimensions) }}
-        {{ irow('📍', 'Storage', item.storage_location) }}
-        {{ irow('💰', 'Replacement', item.replacement_cost|peso if item.replacement_cost else None) }}
-        {{ irow('💵', 'Rental Rate', item.rental_price|peso if item.rental_price else None) }}
-        
-        <div class="d-flex gap-2 mb-2" style="font-size:.875rem;">
-          <span style="width: 20px; text-align: center;">🔍</span>
-          <div>
-            <span style="color:#8896A5;">Condition:</span>
-            <strong class="cond-{{ item.condition }}">{{ item.condition|title }}</strong>
-          </div>
-        </div>
+        {% if item.description %}
+        <p style="font-size:13.5px;color:var(--admin-text-2);line-height:1.65;margin:0;">{{ item.description }}</p>
+        {% endif %}
       </div>
     </div>
 
     <div class="me-card">
-      <div class="me-card-header"><h5>🗓 Reserve for Event</h5></div>
-      <div class="me-card-body">
-        <form method="POST" action="{{ url_for('inventory.reserve', item_id=item.id) }}">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-          <div class="mb-3">
-            <label class="me-form-label">Event Date</label>
-            <input type="date" name="event_date" class="me-form-control" required />
-          </div>
-          <div class="mb-3">
-            <label class="me-form-label">Quantity</label>
-            <input type="number" name="quantity" class="me-form-control" value="1" min="1" max="{{ item.total_qty }}" required />
-          </div>
-          <div class="mb-3">
-            <label class="me-form-label">Event Database ID</label>
-            <input type="number" name="name" class="me-form-control" placeholder="e.g. 1" required />
-          </div>
-          <button type="submit" class="btn-gold w-100 justify-content-center">Confirm Reservation</button>
-        </form>
+      <div class="me-card-header"><h6><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>Financials</h6></div>
+      <div class="me-card-body" style="display:flex;flex-direction:column;gap:10px;">
+        {% for label, val in [
+          ('Unit Cost',       item.unit_cost | peso if item.unit_cost else '—'),
+          ('Total Value',     (item.total_qty * (item.unit_cost or 0)) | peso),
+          ('Available Value', (item.available_qty * (item.unit_cost or 0)) | peso),
+          ('Unit',            item.unit or '—'),
+          ('Location',        item.storage_location or '—'),
+        ] %}
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;padding-bottom:10px;border-bottom:1px solid var(--admin-border);">
+          <span style="color:var(--admin-text-muted);font-weight:600;">{{ label }}</span>
+          <strong style="color:var(--admin-text);">{{ val }}</strong>
+        </div>
+        {% endfor %}
       </div>
     </div>
   </div>
 
   <div class="col-lg-8">
-    <div class="me-card">
-      <div class="me-card-header"><h5>📋 Reservation History</h5></div>
-      <div class="me-card-body p-0">
-        <div class="table-responsive">
-          <table class="me-table mb-0">
-            <thead>
-              <tr>
-                <th>Event</th>
-                <th>Date</th>
-                <th>Qty</th>
-                <th>Status</th>
-                <th class="text-end">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for r in reservations %}
-              <tr>
-                <td>{{ r.event.name if r.event else 'N/A' }}</td>
-                <td>{{ r.event_date|dateformat }}</td>
-                <td>{{ r.quantity }}</td>
-                <td><span class="badge bg-secondary">{{ r.status|title }}</span></td>
-                <td class="text-end">
-                   </td>
-              </tr>
-              {% else %}
-              <tr><td colspan="5" class="text-center py-5 text-muted">No reservations found.</td></tr>
-              {% endfor %}
-            </tbody>
-          </table>
+    {# Stock overview #}
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;">
+      {% for label, val, color in [
+        ('Total Qty',     item.total_qty,     'var(--admin-text)'),
+        ('Available',     item.available_qty, 'var(--success)' if stock_class=='ok' else ('var(--warning)' if stock_class=='low' else 'var(--danger)')),
+        ('Reserved',      item.reserved_qty or 0, 'var(--info)'),
+      ] %}
+      <div class="me-card" style="text-align:center;padding:18px 12px;">
+        <div style="font-size:28px;font-weight:800;color:{{ color }};line-height:1;letter-spacing:-.03em;">{{ val }}</div>
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--admin-text-muted);margin-top:6px;">{{ label }}</div>
+      </div>
+      {% endfor %}
+    </div>
+
+    {# Stock level bar #}
+    <div class="me-card mb-4">
+      <div class="me-card-header"><h6><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Stock Level</h6></div>
+      <div class="me-card-body">
+        {% set pct = ((item.available_qty / item.total_qty * 100) | int) if item.total_qty else 0 %}
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--admin-text-muted);margin-bottom:8px;">
+          <span>{{ item.available_qty }} available of {{ item.total_qty }} total</span>
+          <span style="font-weight:700;color:var(--admin-text);">{{ pct }}%</span>
         </div>
+        <div style="height:10px;background:var(--admin-border);border-radius:var(--r-full);overflow:hidden;margin-bottom:10px;">
+          <div style="height:100%;width:{{ pct }}%;background:{{ 'var(--success)' if stock_class=='ok' else ('var(--warning)' if stock_class=='low' else 'var(--danger)') }};border-radius:var(--r-full);transition:width .8s ease;"></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--admin-text-muted);">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+          Reorder when stock drops to <strong style="color:var(--admin-text);margin:0 3px;">{{ item.reorder_level }}</strong> units
+        </div>
+      </div>
+    </div>
+
+    {# Adjust stock #}
+    <div class="me-card mb-4">
+      <div class="me-card-header"><h6><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Adjust Stock</h6></div>
+      <div class="me-card-body">
+        <form method="POST" action="{{ url_for('inventory.adjust_stock', item_id=item.id) }}" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+          <div class="me-form-group" style="flex:1;min-width:120px;margin-bottom:0;">
+            <label class="me-label">Adjustment</label>
+            <input type="number" name="adjustment" class="me-input" placeholder="+10 or -5" required />
+          </div>
+          <div class="me-form-group" style="flex:2;min-width:160px;margin-bottom:0;">
+            <label class="me-label">Reason</label>
+            <input type="text" name="reason" class="me-input" placeholder="e.g. Returned from event, damaged" />
+          </div>
+          <button type="submit" class="btn-me btn-gold" style="height:40px;align-self:flex-end;">Apply</button>
+        </form>
+      </div>
+    </div>
+
+    {# Active reservations #}
+    <div class="me-card">
+      <div class="me-card-header">
+        <h6><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Active Reservations</h6>
+        {% if item.reservations %}<span class="tag blue">{{ item.reservations | length }}</span>{% endif %}
+      </div>
+      <div class="me-card-body p-0">
+        {% if item.reservations %}
+        <div class="me-table-wrap">
+        <table class="me-table">
+          <thead><tr><th>Event</th><th>Date</th><th>Qty Reserved</th><th>Status</th></tr></thead>
+          <tbody>
+            {% for res in item.reservations %}
+            <tr>
+              <td>
+                <a href="{{ url_for('events.detail', event_id=res.event.id) }}" style="font-weight:700;color:var(--admin-text);text-decoration:none;">{{ res.event.name }}</a>
+                <div class="event-sub">{{ res.event.client.full_name }}</div>
+              </td>
+              <td class="text-primary-sm">{{ res.event.event_date | dateformat }}</td>
+              <td><strong>{{ res.quantity }}</strong> {{ item.unit or 'pcs' }}</td>
+              <td><span class="tag {{ 'green' if res.status=='reserved' else 'gray' }}">{{ res.status | title }}</span></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        </div>
+        {% else %}
+        <div class="me-empty"><h6>No active reservations</h6><p>This item is not currently assigned to any event.</p></div>
+        {% endif %}
       </div>
     </div>
   </div>

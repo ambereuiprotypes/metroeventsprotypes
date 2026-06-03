@@ -1,81 +1,83 @@
 {% extends "base.html" %}
 {% block title %}{{ 'Edit' if item else 'New' }} Item{% endblock %}
-{% block page_title %}{{ 'Edit' if item else 'New' }} Inventory Item{% endblock %}
-
+{% block page_title %}{{ 'Edit Item' if item else 'Add Inventory Item' }}{% endblock %}
+{% block breadcrumb %}<a href="{{ url_for('inventory.list_items') }}" style="color:inherit;">Inventory</a> / {{ 'Edit' if item else 'New' }}{% endblock %}
+{% block topbar_actions %}
+<a href="{{ url_for('inventory.list_items') }}" class="btn-me btn-outline-me"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>Back</a>
+{% endblock %}
 {% block content %}
-<div style="max-width:620px;">
+<div style="max-width:720px;">
   <div class="me-card">
-    <div class="me-card-header"><h5>{{ '✏️ Edit' if item else '➕ Add' }} Item</h5></div>
+    <div class="me-card-header">
+      <h5><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>{{ 'Edit' if item else 'New' }} Inventory Item</h5>
+    </div>
     <div class="me-card-body">
-      <form method="POST" enctype="multipart/form-data">
+      <form method="POST" action="{{ url_for('inventory.edit_item', item_id=item.id) if item else url_for('inventory.new_item') }}" enctype="multipart/form-data">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-        <div class="row g-3">
-          <div class="col-md-8">
-            <label class="me-form-label">Item Name *</label>
-            <input type="text" name="name" class="me-form-control" required value="{{ item.name if item else '' }}" />
+        <div class="form-row cols-2">
+          <div class="me-form-group" style="grid-column:1/-1;">
+            <label class="me-label">Item Name <span style="color:var(--danger)">*</span></label>
+            <input type="text" name="name" class="me-input" value="{{ item.name if item else '' }}" required placeholder="e.g. Tiffany Chair" />
           </div>
-          <div class="col-md-4">
-            <label class="me-form-label">SKU</label>
-            <input type="text" name="sku" class="me-form-control" value="{{ item.sku if item else '' }}" />
-          </div>
-          <div class="col-md-4">
-            <label class="me-form-label">Category</label>
-            <select name="category" class="me-form-control">
-              {% for c in categories %}
-              <option value="{{ c }}" {{ 'selected' if item and item.category == c }}>{{ c|title }}</option>
+          <div class="me-form-group">
+            <label class="me-label">Category</label>
+            <select name="category" class="me-select">
+              <option value="">Select…</option>
+              {% for cat in categories %}
+              <option value="{{ cat }}" {{ 'selected' if item and item.category == cat }}>{{ cat | title }}</option>
               {% endfor %}
             </select>
           </div>
-          <div class="col-md-4">
-            <label class="me-form-label">Total Qty *</label>
-            <input type="number" name="total_qty" class="me-form-control" required min="1"
-                   value="{{ item.total_qty if item else 1 }}" />
+          <div class="me-form-group">
+            <label class="me-label">Unit</label>
+            <input type="text" name="unit" class="me-input" value="{{ item.unit if item else '' }}" placeholder="pcs / sets / meters" />
           </div>
-          <div class="col-md-4">
-            <label class="me-form-label">Condition</label>
-            <select name="condition" class="me-form-control">
-              {% for c in conditions %}
-              <option value="{{ c }}" {{ 'selected' if item and item.condition == c }}>{{ c|title }}</option>
-              {% endfor %}
-            </select>
+        </div>
+        <div class="form-row cols-3">
+          <div class="me-form-group">
+            <label class="me-label">Total Quantity <span style="color:var(--danger)">*</span></label>
+            <input type="number" name="total_qty" class="me-input" value="{{ item.total_qty if item else '' }}" min="0" required />
           </div>
-          <div class="col-12">
-            <label class="me-form-label">Description</label>
-            <textarea name="description" class="me-form-control" rows="2">{{ item.description if item else '' }}</textarea>
+          <div class="me-form-group">
+            <label class="me-label">Available Qty</label>
+            <input type="number" name="available_qty" class="me-input" value="{{ item.available_qty if item else '' }}" min="0" />
           </div>
-          <div class="col-md-6">
-            <label class="me-form-label">Dimensions</label>
-            <input type="text" name="dimensions" class="me-form-control" placeholder="e.g. 2m x 3m"
-                   value="{{ item.dimensions if item else '' }}" />
+          <div class="me-form-group">
+            <label class="me-label">Reorder Level</label>
+            <input type="number" name="reorder_level" class="me-input" value="{{ item.reorder_level if item else 10 }}" min="0" />
+            <div class="me-input-hint">Alert when stock drops below this.</div>
           </div>
-          <div class="col-md-6">
-            <label class="me-form-label">Storage Location</label>
-            <input type="text" name="storage_location" class="me-form-control" placeholder="e.g. Warehouse A, Shelf 3"
-                   value="{{ item.storage_location if item else '' }}" />
+        </div>
+        <div class="form-row cols-2">
+          <div class="me-form-group">
+            <label class="me-label">Unit Cost (₱)</label>
+            <input type="number" name="unit_cost" class="me-input" value="{{ item.unit_cost if item else '' }}" step="0.01" min="0" placeholder="0.00" />
           </div>
-          <div class="col-md-6">
-            <label class="me-form-label">Replacement Cost (₱)</label>
-            <input type="number" name="replacement_cost" class="me-form-control" min="0" step="0.01"
-                   value="{{ item.replacement_cost if item else '' }}" />
+          <div class="me-form-group">
+            <label class="me-label">Location / Storage</label>
+            <input type="text" name="storage_location" class="me-input" value="{{ item.storage_location if item else '' }}" placeholder="e.g. Warehouse A, Row 3" />
           </div>
-          <div class="col-md-6">
-            <label class="me-form-label">Rental Price (₱)</label>
-            <input type="number" name="rental_price" class="me-form-control" min="0" step="0.01"
-                   value="{{ item.rental_price if item else '' }}" />
-          </div>
-          <div class="col-12">
-            <label class="me-form-label">Photo</label>
-            <input type="file" name="photo" class="me-form-control" accept="image/*"
-                   data-preview="photoPreview" />
-            {% if item and item.photo_url %}
-            <img src="{{ item.photo_url }}" alt="" style="max-height:80px;border-radius:6px;margin-top:6px;" />
-            {% endif %}
-            <img id="photoPreview" src="" style="display:none;max-height:80px;border-radius:6px;margin-top:6px;" />
-          </div>
-          <div class="col-12 d-flex gap-2 mt-1">
-            <button type="submit" class="btn-gold">{{ 'Save Changes' if item else 'Add Item' }}</button>
-            <a href="{{ url_for('inventory.list_items') }}" class="btn btn-outline-secondary">Cancel</a>
-          </div>
+        </div>
+        <div class="me-form-group">
+          <label class="me-label">Description / Notes</label>
+          <textarea name="description" class="me-textarea" rows="2" placeholder="Any details, condition notes, etc.">{{ item.description if item else '' }}</textarea>
+        </div>
+        <div class="me-form-group">
+          <label class="me-label">Item Photo</label>
+          {% if item and item.image_url %}
+          <div style="margin-bottom:10px;"><img src="{{ item.image_url }}" style="height:80px;border-radius:var(--r-md);border:1px solid var(--admin-border);" /></div>
+          {% endif %}
+          <input type="file" name="image" class="me-input" style="padding:8px;cursor:pointer;" accept="image/*" />
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;padding-top:10px;border-top:1px solid var(--admin-border);">
+          <a href="{{ url_for('inventory.list_items') }}" class="btn-me btn-outline-me">Cancel</a>
+          {% if item %}
+          <form method="POST" action="{{ url_for('inventory.delete_item', item_id=item.id) }}" onsubmit="return confirm('Delete this item?')" style="display:inline;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            <button type="submit" class="btn-me btn-danger-me">Delete</button>
+          </form>
+          {% endif %}
+          <button type="submit" class="btn-me btn-gold"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg>{{ 'Save Changes' if item else 'Add Item' }}</button>
         </div>
       </form>
     </div>
