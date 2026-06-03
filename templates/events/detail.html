@@ -1,108 +1,141 @@
 {% extends "base.html" %}
 {% block title %}{{ event.name }}{% endblock %}
+{% block page_title %}{{ event.name }}{% endblock %}
+{% block breadcrumb %}<a href="{{ url_for('events.list_events') }}" style="color:inherit;">Events</a> / Workspace{% endblock %}
+
+{% block topbar_actions %}
+<a href="{{ url_for('events.edit_event', event_id=event.id) }}" class="btn-me btn-outline-me">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+  Edit
+</a>
+{% if current_user.is_admin %}
+<form method="POST" action="{{ url_for('events.delete_event', event_id=event.id) }}" onsubmit="return confirm('Permanently delete this workspace?');">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+  <button type="submit" class="btn-me btn-danger-me">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+    Delete
+  </button>
+</form>
+{% endif %}
+{% endblock %}
 
 {% block content %}
-<div class="me-workspace-header" style="margin:-28px -28px 0;padding:20px 28px 0;">
-  <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 pb-2">
+{# ── WORKSPACE HEADER ─────────────────────────────────────── #}
+<div class="me-workspace-header">
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;padding-bottom:14px;">
     <div>
       <div class="me-workspace-title">{{ event.name }}</div>
       <div class="me-workspace-meta">
-        <span style="color:#C9A84C; font-weight:800; letter-spacing: 1px;">{{ event.event_id }}</span> ·
-        {{ event.event_type|title }} ·
-        {{ event.event_date|dateformat }} ·
-        
-        <form action="{{ url_for('events.update_status', event_id=event.id) }}" method="POST" style="display:inline;">
+        <span class="font-mono tag gray" style="font-size:11px;">{{ event.event_id }}</span>
+        <span style="color:var(--admin-border);">·</span>
+        <span>{{ event.event_type | title }}</span>
+        <span style="color:var(--admin-border);">·</span>
+        <span>{{ event.event_date | dateformat }}</span>
+        {% if event.days_until >= 0 and event.status not in ['done','cancelled'] %}
+        <span style="color:var(--admin-border);">·</span>
+        <span class="tag gold">{{ event.days_until }}d away</span>
+        {% endif %}
+        <span style="color:var(--admin-border);">·</span>
+        {# Inline status updater #}
+        <form method="POST" action="{{ url_for('events.update_status', event_id=event.id) }}" style="display:inline;">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-          <select name="status" onchange="this.form.submit()" 
-                  class="badge bg-{{ event.status_color }} border-0 text-white" 
-                  style="cursor: pointer; appearance: none; -webkit-appearance: none; padding: 4px 12px; font-weight: 700;">
-            {% for s_opt in statuses %}
-              <option value="{{ s_opt }}" {{ 'selected' if event.status == s_opt else '' }} 
-                      style="color: #000; background: #fff;">
-                {{ s_opt|replace('_', ' ')|title }}
-              </option>
+          <select name="status" onchange="this.form.submit()" class="status-badge {{ event.status }}" style="border:none;background:none;cursor:pointer;font-family:'Sora',sans-serif;font-weight:600;padding:3px 8px;appearance:none;">
+            {% for s in statuses %}
+            <option value="{{ s }}" {{ 'selected' if event.status == s }} style="color:#000;background:#fff;">{{ s.replace('_',' ') | title }}</option>
             {% endfor %}
           </select>
         </form>
-
-        {% if event.days_until >= 0 and event.status not in ['done','cancelled'] %}
-          · <strong style="color:#C9A84C;">{{ event.days_until }} days away</strong>
-        {% endif %}
       </div>
-    </div>
-    <div class="d-flex gap-2 pb-2">
-      <a href="{{ url_for('events.edit_event', event_id=event.id) }}" class="btn-outline-gold" style="font-size:.82rem;padding:6px 14px;">✏️ Edit</a>
-      {% if current_user.is_admin %}
-      <form action="{{ url_for('events.delete_event', event_id=event.id) }}" method="POST" onsubmit="return confirm('Permanently delete this workspace?');">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-        <button type="submit" class="btn btn-sm btn-outline-danger">🗑</button>
-      </form>
-      {% endif %}
     </div>
   </div>
 
+  {# Tab navigation #}
   <div class="me-workspace-tabs">
-    {% set nav_tabs = [
-      ('overview', '📋', 'Overview'),
-      ('moodboard', '🎨', 'Moodboard'),
-      ('quote', '💰', 'Quote'),
-      ('checklist', '✅', 'Checklist'),
-      ('tasks', '📌', 'Tasks'),
-      ('inventory', '📦', 'Inventory'),
-      ('suppliers', '🤝', 'Suppliers'),
-      ('payments', '💸', 'Payments'),
-      ('event_log', '📝', 'Event Log'),
+    {% set tabs = [
+      ('overview','overview','Overview'),
+      ('moodboard','image','Moodboard'),
+      ('quote','dollar-sign','Quote'),
+      ('checklist','check-square','Checklist'),
+      ('tasks','bookmark','Tasks'),
+      ('inventory','package','Inventory'),
+      ('suppliers','truck','Suppliers'),
+      ('payments','credit-card','Payments'),
+      ('event_log','file-text','Event Log'),
     ] %}
-    {% for t_id, t_icon, t_label in nav_tabs %}
+    {% set icons = {
+      'overview':'<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>',
+      'moodboard':'<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>',
+      'quote':'<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
+      'checklist':'<polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>',
+      'tasks':'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
+      'inventory':'<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>',
+      'suppliers':'<rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>',
+      'payments':'<rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/>',
+      'event_log':'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>',
+    } %}
+    {% for t_id, t_icon, t_label in tabs %}
     <a href="{{ url_for('events.detail', event_id=event.id, tab=t_id) }}"
        class="tab-btn {{ 'active' if tab == t_id or (not tab and t_id == 'overview') }}">
-      {{ t_icon }} {{ t_label }}
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">{{ icons[t_id] | safe }}</svg>
+      {{ t_label }}
     </a>
     {% endfor %}
   </div>
 </div>
 
-<div class="mt-4">
+<div style="padding-top:24px;">
 
-{# =================== 📋 OVERVIEW =================== #}
+{# ═══ OVERVIEW ═══ #}
 {% if tab == 'overview' or not tab %}
 <div class="row g-4">
   <div class="col-lg-4">
-    <div class="me-card mb-4 shadow-sm border-0">
-      <div class="me-card-header bg-white border-0 pt-4 px-4 pb-0"><h5 class="fw-bold">📋 Event Details</h5></div>
-      <div class="me-card-body p-4">
-        {% macro drow(icon, label, val) %}
-        <div class="d-flex gap-2 mb-3" style="font-size:.9rem;">
-          <span>{{ icon }}</span>
-          <div><span class="text-muted fw-bold text-uppercase small">{{ label }}</span><br><strong>{{ val or '—' }}</strong></div>
+    <div class="me-card mb-4">
+      <div class="me-card-header">
+        <h6><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Event Details</h6>
+      </div>
+      <div class="me-card-body" style="display:flex;flex-direction:column;gap:14px;">
+        {% macro drow(icon_path, label, val) %}
+        <div style="display:flex;gap:12px;align-items:flex-start;">
+          <div style="width:32px;height:32px;background:var(--admin-overlay);border:1px solid var(--admin-border);border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--brand-dark)" stroke-width="2">{{ icon_path | safe }}</svg>
+          </div>
+          <div>
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--admin-text-muted);margin-bottom:2px;">{{ label }}</div>
+            <div style="font-size:13.5px;font-weight:600;color:var(--admin-text);">{{ val or '—' }}</div>
+          </div>
         </div>
         {% endmacro %}
-        {{ drow('👤', 'Client', event.client.full_name) }}
-        {{ drow('📅', 'Date', event.event_date|dateformat) }}
-        {{ drow('🏠', 'Venue', event.venue_name) }}
-        {{ drow('📍', 'Address', event.venue_address) }}
-        {{ drow('🎩', 'Type', event.event_type|title) }}
-        {{ drow('🎙', 'Coordinator', event.coordinator.name if event.coordinator else 'Unassigned') }}
+        {{ drow('<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>', 'Client', event.client.full_name) }}
+        {{ drow('<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/>', 'Date', event.event_date | dateformat) }}
+        {{ drow('<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>', 'Venue', event.venue_name) }}
+        {{ drow('<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>', 'Address', event.venue_address) }}
+        {{ drow('<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>', 'Coordinator', event.coordinator.name if event.coordinator else 'Unassigned') }}
+        {% if event.guest_count %}
+        {{ drow('<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>', 'Guests', event.guest_count ~ ' pax') }}
+        {% endif %}
       </div>
     </div>
 
-    <div class="me-card shadow-sm border-0">
-      <div class="me-card-header bg-white border-0 pt-4 px-4 pb-0"><h5 class="fw-bold">💰 Financial Summary</h5></div>
-      <div class="me-card-body p-4">
+    <div class="me-card">
+      <div class="me-card-header">
+        <h6><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>Financial</h6>
+        <a href="{{ url_for('events.detail', event_id=event.id, tab='payments') }}" class="btn-me btn-outline-me btn-sm-me">Payments</a>
+      </div>
+      <div class="me-card-body" style="display:flex;flex-direction:column;gap:10px;">
         {% set quote = event.active_quote %}
-        <div class="d-flex justify-content-between mb-2">
-          <span style="color:#8896A5;">Grand Total</span>
-          <strong>{{ quote.grand_total|peso if quote else 'No Quote Yet' }}</strong>
+        <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--admin-text-2);">
+          <span>Grand Total</span>
+          <strong style="color:var(--admin-text);">{{ quote.grand_total | peso if quote else 'No Quote' }}</strong>
         </div>
-        <div class="d-flex justify-content-between mb-2">
-          <span style="color:#8896A5;">Total Paid</span>
-          <strong style="color:#48BB78;">{{ event.total_paid|peso }}</strong>
+        <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--admin-text-2);">
+          <span>Total Paid</span>
+          <strong style="color:var(--success);">{{ event.total_paid | peso }}</strong>
         </div>
-        <hr class="divider" />
-        <div class="d-flex justify-content-between">
-          <span style="font-weight:700;">Remaining Balance</span>
-          <strong style="color:{{ '#F56565' if event.balance_due > 0 else '#48BB78' }}; font-size:1.1rem;">
-            {% if not quote %} ₱0.00 {% elif event.balance_due > 0 %} {{ event.balance_due|peso }} {% else %} FULLY PAID ✓ {% endif %}
+        <div style="height:1px;background:var(--admin-border);"></div>
+        <div style="display:flex;justify-content:space-between;font-size:14px;">
+          <span style="font-weight:700;color:var(--admin-text);">Balance</span>
+          <strong style="font-size:16px;color:{{ 'var(--danger)' if event.balance_due > 0 else 'var(--success)' }};">
+            {% if not quote %}—{% elif event.balance_due > 0 %}{{ event.balance_due | peso }}{% else %}Fully Paid{% endif %}
           </strong>
         </div>
       </div>
@@ -110,451 +143,520 @@
   </div>
 
   <div class="col-lg-8">
-     <div class="row g-3 mb-4">
-        <div class="col-6 col-md-3"><div class="kpi-card shadow-sm border-0"><h5>{{ event.tasks.filter_by(is_done=True).count() }}/{{ event.tasks.count() }}</h5><p>Tasks Done</p></div></div>
-        <div class="col-6 col-md-3"><div class="kpi-card shadow-sm border-0"><h5>{{ event.checklist_items.filter_by(is_done=True).count() }}/{{ event.checklist_items.count() }}</h5><p>Checklist</p></div></div>
-        <div class="col-6 col-md-3"><div class="kpi-card shadow-sm border-0"><h5>{{ event.moodboard_pegs.count() }}</h5><p>Pegs</p></div></div>
-        <div class="col-6 col-md-3"><div class="kpi-card shadow-sm border-0"><h5>{{ event.event_logs.count() }}</h5><p>Log Entries</p></div></div>
-     </div>
-  </div>
-</div>
-
-{# =================== 🎨 MOODBOARD =================== #}
-{% elif tab == 'moodboard' %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-  <h5 class="mb-0">🎨 Moodboard & Inspiration</h5>
-  <button class="btn-gold" data-bs-toggle="collapse" data-bs-target="#addPegForm">➕ Add Peg</button>
-</div>
-
-<div class="collapse mb-4" id="addPegForm">
-  <div class="me-card me-card-body shadow-sm">
-    <form method="POST" action="{{ url_for('events.add_peg', event_id=event.id) }}" enctype="multipart/form-data">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-      <div class="row g-3">
-        <div class="col-md-4"><label class="me-form-label small fw-bold text-muted">Title</label><input type="text" name="title" class="form-control bg-light border-0" required></div>
-        <div class="col-md-4"><label class="me-form-label small fw-bold text-muted">Category</label>
-          <select name="category" class="form-select bg-light border-0">
-            {% for c in peg_categories %}<option value="{{ c }}">{{ c|replace('_',' ')|title }}</option>{% endfor %}
-          </select>
-        </div>
-        <div class="col-md-4"><label class="me-form-label small fw-bold text-muted">Image</label><input type="file" name="peg_image" class="form-control bg-light border-0" accept="image/*" required></div>
-        <div class="col-12 text-end"><button type="submit" class="btn-gold">Upload Peg</button></div>
+    {# Mini KPIs #}
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;">
+      {% for label, val in [
+        ('Tasks Done', (event.tasks.filter_by(is_done=True).count()|string) ~ '/' ~ (event.tasks.count()|string)),
+        ('Checklist',  (event.checklist_items.filter_by(is_done=True).count()|string) ~ '/' ~ (event.checklist_items.count()|string)),
+        ('Pegs',       event.moodboard_pegs.count()),
+        ('Log Entries',event.event_logs.count()),
+      ] %}
+      <div class="me-card" style="text-align:center;padding:16px 10px;">
+        <div style="font-size:22px;font-weight:800;color:var(--admin-text);letter-spacing:-.02em;line-height:1;">{{ val }}</div>
+        <div style="font-size:11px;color:var(--admin-text-muted);margin-top:4px;font-weight:600;">{{ label }}</div>
       </div>
-    </form>
-  </div>
-</div>
+      {% endfor %}
+    </div>
 
-<div class="row g-3">
-  {% for peg in event.moodboard_pegs.all() %}
-  <div class="col-6 col-md-4 col-lg-3">
-    <div class="me-card h-100 shadow-sm" style="overflow: hidden; position: relative;">
-      <form action="{{ url_for('events.delete_peg', event_id=event.id, peg_id=peg.id) }}" method="POST" style="position: absolute; top: 8px; right: 8px; z-index: 10;">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-        <button type="submit" class="btn btn-sm btn-danger opacity-75" style="border-radius: 50%; width: 28px; height: 28px; padding: 0;">✕</button>
-      </form>
-      <div style="height: 200px;"><img src="{{ peg.image_url }}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='/static/img/no-image.svg'"></div>
-      <div class="p-2"><strong style="font-size: 13px;">{{ peg.title }}</strong></div>
+    {# Team notes #}
+    {% if event.team_notes %}
+    <div class="me-card mb-4">
+      <div class="me-card-header">
+        <h6><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Team Notes</h6>
+      </div>
+      <div class="me-card-body">
+        <p style="font-size:14px;color:var(--admin-text-2);line-height:1.7;margin:0;">{{ event.team_notes }}</p>
+      </div>
+    </div>
+    {% endif %}
+
+    {# Upcoming tasks preview #}
+    <div class="me-card">
+      <div class="me-card-header">
+        <h6><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Open Tasks</h6>
+        <a href="{{ url_for('events.detail', event_id=event.id, tab='tasks') }}" class="btn-me btn-outline-me btn-sm-me">View all</a>
+      </div>
+      <div class="me-card-body p-0">
+        {% set open_tasks = event.tasks.filter_by(is_done=False).all()[:5] %}
+        {% if open_tasks %}
+        {% for t in open_tasks %}
+        <div style="display:flex;align-items:center;gap:12px;padding:11px 18px;border-bottom:1px solid var(--admin-border);">
+          <form method="POST" action="{{ url_for('events.toggle_task', event_id=event.id, task_id=t.id) }}" style="margin:0;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            <button type="submit" style="width:20px;height:20px;border-radius:50%;border:2px solid var(--admin-border-2);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0;transition:all var(--t-fast);" title="Mark done"></button>
+          </form>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13px;font-weight:600;color:var(--admin-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ t.title }}</div>
+            {% if t.due_date %}<div style="font-size:11px;color:var(--admin-text-muted);">Due {{ t.due_date.strftime('%b %d') }}</div>{% endif %}
+          </div>
+          {% if t.assignee %}<span class="tag gray">{{ t.assignee.name }}</span>{% endif %}
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="me-empty"><h6>All tasks complete</h6></div>
+        {% endif %}
+      </div>
     </div>
   </div>
-  {% else %}<div class="text-center py-5 w-100 text-muted">No pegs uploaded yet.</div>{% endfor %}
 </div>
 
-{# =================== 💰 QUOTE =================== #}
+{# ═══ MOODBOARD ═══ #}
+{% elif tab == 'moodboard' %}
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+  <div>
+    <h5 style="font-size:16px;font-weight:700;margin:0 0 4px;">Design Moodboard</h5>
+    <div style="font-size:12px;color:var(--admin-text-muted);">Visual inspiration references for the event</div>
+  </div>
+  <button class="btn-me btn-gold" data-modal-open="addPegModal">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    Add Peg
+  </button>
+</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;">
+  {% for peg in event.moodboard_pegs.all() %}
+  <div style="border-radius:var(--r-lg);overflow:hidden;background:var(--admin-surface);border:1px solid var(--admin-border);box-shadow:var(--shadow-sm);position:relative;">
+    <form action="{{ url_for('events.delete_peg', event_id=event.id, peg_id=peg.id) }}" method="POST" style="position:absolute;top:8px;right:8px;z-index:10;">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <button type="submit" class="btn-icon danger" style="background:rgba(255,255,255,.9);" title="Remove">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </form>
+    {% if peg.image_url %}
+    <img src="{{ peg.image_url }}" style="width:100%;height:180px;object-fit:cover;display:block;" onerror="this.src='/static/img/no-image.svg'" />
+    {% else %}
+    <div style="height:180px;background:var(--admin-overlay);display:flex;align-items:center;justify-content:center;">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--admin-text-muted)" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+    </div>
+    {% endif %}
+    <div style="padding:10px 12px;">
+      <div style="font-size:13px;font-weight:600;color:var(--admin-text);">{{ peg.title }}</div>
+      <div style="font-size:10px;color:var(--admin-text-muted);text-transform:uppercase;letter-spacing:.06em;margin-top:2px;">{{ peg.category }}</div>
+    </div>
+  </div>
+  {% else %}
+  <div class="me-empty" style="grid-column:1/-1;">
+    <div class="me-empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+    <h6>No inspiration pegs yet</h6><p>Upload the first reference image.</p>
+  </div>
+  {% endfor %}
+</div>
+
+{# ═══ QUOTE ═══ #}
 {% elif tab == 'quote' %}
 {% set quote = event.active_quote %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-  <h5 class="mb-0">💰 Quotation Workspace</h5>
-  <a href="{{ url_for('quotes.new_quote', event_id=event.id) }}" class="btn-gold">{{ '🔄 New Revision' if quote else '➕ Create Quote' }}</a>
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+  <div><h5 style="font-size:16px;font-weight:700;margin:0;">Quotation Workspace</h5></div>
+  <a href="{{ url_for('quotes.new_quote', event_id=event.id) }}" class="btn-me btn-gold">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    {{ 'New Revision' if quote else 'Create Quote' }}
+  </a>
 </div>
 {% if quote %}
-<div class="me-card shadow-sm border-0">
-  <table class="me-table mb-0 bg-white">
-    <thead><tr><th>Item</th><th class="text-end">Total</th></tr></thead>
-    <tbody>{% for item in quote.items %}<tr><td>{{ item.item_name }}</td><td class="text-end">{{ item.total_price|peso }}</td></tr>{% endfor %}</tbody>
-  </table>
-</div>
-{% else %}<div class="text-center py-5 bg-white shadow-sm rounded text-muted">No active quote for this workspace.</div>{% endif %}
-
-{# =================== ✅ CHECKLIST =================== #}
-{% elif tab == 'checklist' %}
-<h5 class="mb-3">✅ Event Checklist</h5>
-<div class="me-card me-card-body shadow-sm mb-4 p-3">
-    <form action="{{ url_for('events.add_checklist_item', event_id=event.id) }}" method="POST" class="d-flex gap-2 m-0">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-        <input type="text" name="title" class="form-control border-0 bg-light" placeholder="e.g., Finalize catering menu..." required style="padding: 12px; border-radius: 10px;">
-        <button type="submit" class="btn-gold px-4" style="border-radius: 10px; font-weight: 700; white-space: nowrap;">Add Item</button>
-    </form>
-</div>
-<div class="d-flex flex-column gap-2">
-    {% for item in event.checklist_items.all() %}
-    <div class="me-card shadow-sm p-3 d-flex justify-content-between align-items-center" style="border-left: 4px solid {{ '#48BB78' if item.is_done else '#C9A84C' }};">
-        <div class="d-flex align-items-center gap-3">
-            <form action="{{ url_for('events.toggle_checklist_item', event_id=event.id, item_id=item.id) }}" method="POST" class="m-0">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-                <button type="submit" class="btn btn-sm {{ 'btn-success' if item.is_done else 'btn-light border' }}" style="border-radius: 50%; width: 32px; height: 32px; padding: 0;">{{ '✓' if item.is_done else '' }}</button>
-            </form>
-            <span class="{{ 'text-decoration-line-through text-muted' if item.is_done else 'fw-bold text-dark' }}">{{ item.title }}</span>
-        </div>
-        <form action="{{ url_for('events.delete_checklist_item', event_id=event.id, item_id=item.id) }}" method="POST" class="m-0">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-            <button type="submit" class="btn btn-link text-danger p-0" onclick="return confirm('Delete this checklist item?');">🗑</button>
-        </form>
-    </div>
-    {% else %}
-    <div class="text-center py-5 bg-white rounded shadow-sm text-muted">No checklist items yet.</div>
-    {% endfor %}
-</div>
-
-{# =================== 📌 TASKS =================== #}
-{% elif tab == 'tasks' %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h5 class="mb-0">📌 Crew Tasks</h5>
-    <button class="btn-gold" data-bs-toggle="modal" data-bs-target="#assignTaskModal">➕ Assign Task</button>
-</div>
-<div class="me-card p-0 shadow-sm border-0">
-  <table class="me-table mb-0 bg-white">
-    <thead><tr><th>Task</th><th>Assigned To</th><th>Due Date</th><th class="text-center">Status</th><th class="text-end">Actions</th></tr></thead>
-    <tbody>
-      {% for t in event.tasks.all() %}
-      <tr>
-        <td class="fw-bold {{ 'text-decoration-line-through text-muted' if t.is_done else '' }}">{{ t.title }}</td>
-        <td>{% if t.assigned_to %}<span class="badge bg-light text-dark border">👤 {{ t.assignee.name if t.assignee else 'Team' }}</span>{% else %}<span class="text-muted small">Unassigned</span>{% endif %}</td>
-        <td><span class="text-muted small">{{ t.due_date.strftime('%b %d, %Y') if t.due_date else 'No Date' }}</span></td>
-        <td class="text-center">
-          <form action="{{ url_for('events.toggle_task', event_id=event.id, task_id=t.id) }}" method="POST" style="display: inline;">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-            <button type="submit" class="btn btn-sm {{ 'btn-success' if t.is_done else 'btn-outline-secondary' }}" style="border-radius: 8px;">{{ '✅ Done' if t.is_done else 'Pending' }}</button>
-          </form>
-        </td>
-        <td class="text-end">
-          <form action="{{ url_for('events.delete_task', event_id=event.id, task_id=t.id) }}" method="POST" style="display: inline;">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-            <button type="submit" class="btn btn-link text-danger p-0" onclick="return confirm('Delete this task?');">🗑</button>
-          </form>
-        </td>
-      </tr>
-      {% else %}<tr><td colspan="5" class="text-center py-5 text-muted">No tasks assigned.</td></tr>{% endfor %}
-    </tbody>
-  </table>
-</div>
-
-{# =================== 📦 INVENTORY =================== #}
-{% elif tab == 'inventory' %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h5 class="mb-0">📦 Item Reservations</h5>
-    <button class="btn-gold" data-bs-toggle="modal" data-bs-target="#reserveItemModal">➕ Reserve Item</button>
-</div>
-<div class="me-card p-0 shadow-sm border-0">
-    <table class="me-table mb-0 bg-white">
-      <thead><tr><th>Item</th><th class="text-center">Qty</th><th>Status</th><th class="text-end">Action</th></tr></thead>
+<div class="me-card">
+  <div class="me-card-header">
+    <h6>Quote &mdash; {{ quote.package_name or 'Standard Package' }}</h6>
+    <span class="status-badge {{ 'done' if quote.status == 'approved' else 'planning' }}">{{ quote.status | title }}</span>
+  </div>
+  <div class="me-card-body p-0">
+    <div class="me-table-wrap">
+    <table class="me-table">
+      <thead><tr><th>Category</th><th>Item</th><th>Qty</th><th>Unit Price</th><th style="text-align:right;">Total</th></tr></thead>
       <tbody>
-      {% for res in event.reservations %}
+        {% for item in quote.items %}
         <tr>
-            <td class="fw-bold">{{ res.item.name if res.item else 'Unknown Item' }}</td>
-            <td class="text-center">{{ res.quantity }}</td>
-            <td><span class="badge bg-light text-dark border">{{ res.status|title }}</span></td>
-            <td class="text-end">
-                <form action="{{ url_for('events.delete_reservation', event_id=event.id, res_id=res.id) }}" method="POST">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-                    <button type="submit" class="btn btn-link text-danger p-0">🗑</button>
-                </form>
-            </td>
+          <td><span class="tag gray">{{ item.category or '—' }}</span></td>
+          <td style="font-weight:600;">{{ item.item_name }}</td>
+          <td>{{ item.qty }} {{ item.unit }}</td>
+          <td>{{ item.unit_price | peso }}</td>
+          <td style="text-align:right;font-weight:700;">{{ item.total_price | peso }}</td>
         </tr>
-      {% else %}<tr><td colspan="4" class="text-center py-5 text-muted">No items reserved.</td></tr>{% endfor %}
+        {% endfor %}
       </tbody>
     </table>
-</div>
-
-{# =================== 🤝 SUPPLIERS =================== #}
-{% elif tab == 'suppliers' %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h5 class="mb-0">🤝 Suppliers & Purchase Orders</h5>
-    <button class="btn-gold" data-bs-toggle="modal" data-bs-target="#addPoModal">➕ Create PO</button>
-</div>
-<div class="me-card p-0 shadow-sm border-0">
-  <table class="me-table mb-0 bg-white">
-    <thead>
-      <tr>
-        <th>PO Number</th>
-        <th>Supplier</th>
-        <th>Description</th>
-        <th>Amount</th>
-        <th>Delivery Date</th>
-        <th class="text-center">Status</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for po in event.purchase_orders %}
-      <tr>
-        <td class="fw-bold">{{ po.po_number or 'N/A' }}</td>
-        <td><span class="badge bg-light text-dark border">🏢 {{ po.supplier.company_name if po.supplier else 'Unknown' }}</span></td>
-        <td><span class="text-muted small">{{ po.description }}</span></td>
-        <td class="text-success fw-bold">{{ po.amount|peso }}</td>
-        <td>
-            <span class="text-muted small">
-                {{ po.delivery_date.strftime('%b %d, %Y') if po.delivery_date else 'TBD' }}
-                {% if po.delivery_time_window %}<br>({{ po.delivery_time_window }}){% endif %}
-            </span>
-        </td>
-        <td class="text-center"><span class="badge bg-light text-dark border">{{ po.status|title }}</span></td>
-      </tr>
-      {% else %}<tr><td colspan="6" class="text-center py-5 text-muted">No purchase orders created yet.</td></tr>{% endfor %}
-    </tbody>
-  </table>
-</div>
-
-{# =================== 💸 PAYMENTS =================== #}
-{% elif tab == 'payments' %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h5 class="mb-0">💸 Payment History</h5>
-    <button class="btn-gold" data-bs-toggle="modal" data-bs-target="#recordPaymentModal">➕ Record Payment</button>
-</div>
-<div class="me-card p-0 shadow-sm border-0">
-  <table class="me-table mb-0 bg-white">
-    <thead><tr><th>Label</th><th>Amount</th><th>Status</th></tr></thead>
-    <tbody>
-      {% for p in event.payments.all() %}
-      <tr>
-        <td class="fw-bold">{{ p.label }}</td>
-        <td class="text-success fw-bold">{{ p.amount|peso }}</td>
-        <td><span class="badge bg-{{ p.status_color }}">{{ p.status|title }}</span></td>
-      </tr>
-      {% else %}<tr><td colspan="3" class="text-center py-5 text-muted">No payments recorded.</td></tr>{% endfor %}
-    </tbody>
-  </table>
-</div>
-
-{# =================== 📝 EVENT DAY LOG =================== #}
-{% elif tab == 'event_log' %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h5 class="mb-0">📝 Event Day Log</h5>
-    <button class="btn-gold" data-bs-toggle="collapse" data-bs-target="#addLogForm">➕ New Entry</button>
-</div>
-
-<div class="collapse mb-4" id="addLogForm">
-  <div class="me-card me-card-body shadow-sm">
-    <form method="POST" action="{{ url_for('event_log.add_log', event_id=event.id) }}" enctype="multipart/form-data">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-      <div class="row g-3">
-        <div class="col-md-3">
-          <label class="me-form-label small fw-bold text-muted">Log Type</label>
-          <select name="log_type" class="form-select border-0 bg-light" style="padding: 12px; border-radius: 10px;">
-            <option value="note">📝 Note / Update</option>
-            <option value="incident">⚠️ Incident / Issue</option>
-            <option value="change_request">💰 Change Request</option>
-            <option value="delivery">📦 Delivery / Arrival</option>
-          </select>
-        </div>
-        <div class="col-md-9">
-          <label class="me-form-label small fw-bold text-muted">Message / Summary</label>
-          <input type="text" name="message" class="form-control border-0 bg-light" placeholder="What happened?" required style="padding: 12px; border-radius: 10px;">
-        </div>
-        <div class="col-md-4">
-          <label class="me-form-label small fw-bold text-muted">Photo Attachment</label>
-          <input type="file" name="photo" class="form-control border-0 bg-light" accept="image/*" style="padding: 10px; border-radius: 10px;">
-        </div>
-        <div class="col-md-4">
-          <label class="me-form-label small fw-bold text-muted">Cost Impact (₱)</label>
-          <input type="number" step="0.01" name="cost_impact" class="form-control border-0 bg-light" placeholder="0.00" style="padding: 10px; border-radius: 10px;">
-        </div>
-        <div class="col-md-4">
-          <label class="me-form-label small fw-bold text-muted">Change Description</label>
-          <input type="text" name="change_description" class="form-control border-0 bg-light" placeholder="e.g., Added 2 extra tables" style="padding: 10px; border-radius: 10px;">
-        </div>
-        <div class="col-12 text-end">
-          <button type="submit" class="btn-gold px-5" style="border-radius: 10px; font-weight: 700;">Add Log Entry ⚡</button>
+    </div>
+    <div style="padding:16px 20px;border-top:1px solid var(--admin-border);display:flex;justify-content:flex-end;">
+      <div style="width:260px;">
+        <div class="quote-totals">
+          <div class="quote-total-row"><span>Subtotal</span><span>{{ quote.subtotal | peso }}</span></div>
+          {% if quote.discount_amount %}<div class="quote-total-row"><span>Discount</span><span style="color:var(--success);">-{{ quote.discount_amount | peso }}</span></div>{% endif %}
+          {% if quote.tax_amount %}<div class="quote-total-row"><span>Tax</span><span>{{ quote.tax_amount | peso }}</span></div>{% endif %}
+          <div class="quote-total-row grand"><span>Grand Total</span><span>{{ quote.grand_total | peso }}</span></div>
         </div>
       </div>
+    </div>
+  </div>
+</div>
+{% else %}
+<div class="me-empty"><div class="me-empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div><h6>No active quote</h6><p>Create a quote to set the financial scope of this event.</p><a href="{{ url_for('quotes.new_quote', event_id=event.id) }}" class="btn-me btn-gold btn-sm-me">Create Quote</a></div>
+{% endif %}
+
+{# ═══ CHECKLIST ═══ #}
+{% elif tab == 'checklist' %}
+<div class="me-card mb-4">
+  <div class="me-card-body">
+    <form action="{{ url_for('events.add_checklist_item', event_id=event.id) }}" method="POST" style="display:flex;gap:10px;">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <input type="text" name="title" class="me-input" placeholder="Add a checklist item…" required style="flex:1;" />
+      <button type="submit" class="btn-me btn-gold">Add</button>
     </form>
   </div>
 </div>
+<div style="display:flex;flex-direction:column;gap:8px;">
+  {% for item in event.checklist_items.all() %}
+  <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--admin-surface);border:1px solid var(--admin-border);border-left:3px solid {{ 'var(--success)' if item.is_done else 'var(--brand)' }};border-radius:var(--r-md);box-shadow:var(--shadow-xs);">
+    <form action="{{ url_for('events.toggle_checklist_item', event_id=event.id, item_id=item.id) }}" method="POST" style="margin:0;">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <button type="submit" style="width:22px;height:22px;border-radius:50%;border:2px solid {{ 'var(--success)' if item.is_done else 'var(--admin-border-2)' }};background:{{ 'var(--success)' if item.is_done else 'transparent' }};cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0;transition:all var(--t-fast);">
+        {% if item.is_done %}<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>{% endif %}
+      </button>
+    </form>
+    <span style="flex:1;font-size:13.5px;font-weight:{{ '400' if item.is_done else '600' }};color:{{ 'var(--admin-text-muted)' if item.is_done else 'var(--admin-text)' }};text-decoration:{{ 'line-through' if item.is_done else 'none' }};">{{ item.title }}</span>
+    <form action="{{ url_for('events.delete_checklist_item', event_id=event.id, item_id=item.id) }}" method="POST" style="margin:0;">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <button type="submit" class="btn-icon danger" title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg></button>
+    </form>
+  </div>
+  {% else %}
+  <div class="me-empty"><div class="me-empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div><h6>No checklist items</h6><p>Add items above to track pre-event tasks.</p></div>
+  {% endfor %}
+</div>
 
-<div class="timeline">
+{# ═══ TASKS ═══ #}
+{% elif tab == 'tasks' %}
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+  <h5 style="font-size:16px;font-weight:700;margin:0;">Crew Tasks</h5>
+  <button class="btn-me btn-gold" data-modal-open="taskModal">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    Assign Task
+  </button>
+</div>
+<div class="me-card">
+  <div class="me-card-body p-0">
+    <div class="me-table-wrap">
+    <table class="me-table">
+      <thead><tr><th>Task</th><th>Assigned To</th><th>Due Date</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+        {% for t in event.tasks.all() %}
+        <tr>
+          <td><div class="event-name {{ 'text-decoration-line-through' if t.is_done }}">{{ t.title }}</div></td>
+          <td>{% if t.assignee %}<span class="tag gray">{{ t.assignee.name }}</span>{% else %}<span style="color:var(--admin-text-muted);font-size:12px;">Unassigned</span>{% endif %}</td>
+          <td class="text-primary-sm">{{ t.due_date.strftime('%b %d, %Y') if t.due_date else '—' }}</td>
+          <td>
+            <form method="POST" action="{{ url_for('events.toggle_task', event_id=event.id, task_id=t.id) }}" style="display:inline;">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+              <button type="submit" class="status-badge {{ 'done' if t.is_done else 'planning' }}" style="border:none;cursor:pointer;font-family:'Sora',sans-serif;">{{ 'Done' if t.is_done else 'Pending' }}</button>
+            </form>
+          </td>
+          <td>
+            <form method="POST" action="{{ url_for('events.delete_task', event_id=event.id, task_id=t.id) }}" style="display:inline;" onsubmit="return confirm('Delete task?')">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+              <button type="submit" class="btn-icon danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5"><div class="me-empty"><h6>No tasks yet</h6></div></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </div>
+</div>
+
+{# ═══ INVENTORY ═══ #}
+{% elif tab == 'inventory' %}
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+  <h5 style="font-size:16px;font-weight:700;margin:0;">Item Reservations</h5>
+  <button class="btn-me btn-gold" data-modal-open="reserveModal">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    Reserve Item
+  </button>
+</div>
+<div class="me-card">
+  <div class="me-card-body p-0">
+    <div class="me-table-wrap">
+    <table class="me-table">
+      <thead><tr><th>Item</th><th>Quantity</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+        {% for res in event.reservations %}
+        <tr>
+          <td class="event-name">{{ res.item.name if res.item else 'Unknown' }}</td>
+          <td><strong>{{ res.quantity }}</strong></td>
+          <td><span class="tag {{ 'green' if res.status == 'reserved' else 'gray' }}">{{ res.status | title }}</span></td>
+          <td>
+            <form method="POST" action="{{ url_for('events.delete_reservation', event_id=event.id, res_id=res.id) }}" onsubmit="return confirm('Remove reservation?')">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+              <button type="submit" class="btn-icon danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4"><div class="me-empty"><h6>No items reserved</h6></div></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </div>
+</div>
+
+{# ═══ SUPPLIERS ═══ #}
+{% elif tab == 'suppliers' %}
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+  <h5 style="font-size:16px;font-weight:700;margin:0;">Purchase Orders</h5>
+  <button class="btn-me btn-gold" data-modal-open="poModal">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    Create PO
+  </button>
+</div>
+<div class="me-card">
+  <div class="me-card-body p-0">
+    <div class="me-table-wrap">
+    <table class="me-table">
+      <thead><tr><th>PO Number</th><th>Supplier</th><th>Description</th><th>Amount</th><th>Delivery</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for po in event.purchase_orders %}
+        <tr>
+          <td class="font-mono tag gray" style="display:inline-flex;margin:10px 0;">{{ po.po_number or 'N/A' }}</td>
+          <td><strong>{{ po.supplier.company_name if po.supplier else '—' }}</strong></td>
+          <td class="text-primary-sm" style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ po.description }}</td>
+          <td style="font-weight:700;color:var(--success);">{{ po.amount | peso }}</td>
+          <td class="text-primary-sm">{{ po.delivery_date | dateformat if po.delivery_date else 'TBD' }}</td>
+          <td><span class="status-badge {{ 'done' if po.status == 'delivered' else ('cancelled' if po.status == 'cancelled' else 'production') }}">{{ po.status | title }}</span></td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6"><div class="me-empty"><h6>No purchase orders</h6></div></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </div>
+</div>
+
+{# ═══ PAYMENTS ═══ #}
+{% elif tab == 'payments' %}
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+  <h5 style="font-size:16px;font-weight:700;margin:0;">Payment History</h5>
+  <button class="btn-me btn-gold" data-modal-open="paymentModal">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    Record Payment
+  </button>
+</div>
+<div class="me-card">
+  <div class="me-card-body p-0">
+    <div class="me-table-wrap">
+    <table class="me-table">
+      <thead><tr><th>Label</th><th>Amount</th><th>Type</th><th>Due Date</th><th>Status</th><th>Proof</th></tr></thead>
+      <tbody>
+        {% for p in event.payments.all() %}
+        <tr>
+          <td class="event-name">{{ p.label }}</td>
+          <td style="font-weight:700;color:var(--success);font-size:14px;">{{ p.amount | peso }}</td>
+          <td><span class="tag gray">{{ p.payment_type | replace('_',' ') | title }}</span></td>
+          <td class="text-primary-sm">{{ p.due_date | dateformat if p.due_date else '—' }}</td>
+          <td><span class="status-badge {{ 'done' if p.status == 'paid' else ('cancelled' if p.status == 'cancelled' else 'planning') }}">{{ p.status | title }}</span></td>
+          <td>{% if p.proof_url %}<a href="{{ p.proof_url }}" target="_blank" class="tag blue" style="text-decoration:none;">View</a>{% else %}<span style="color:var(--admin-text-muted);font-size:12px;">None</span>{% endif %}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6"><div class="me-empty"><h6>No payments recorded</h6></div></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </div>
+</div>
+
+{# ═══ EVENT LOG ═══ #}
+{% elif tab == 'event_log' %}
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+  <h5 style="font-size:16px;font-weight:700;margin:0;">Event Day Log</h5>
+  <button class="btn-me btn-gold" data-modal-open="logModal">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    New Entry
+  </button>
+</div>
+<div class="me-timeline">
   {% set logs = event.event_logs.all() | sort(attribute='logged_at', reverse=True) %}
   {% for entry in logs %}
-  <div class="me-card mb-3 shadow-sm border-0" style="border-left: 5px solid {{ '#F56565' if entry.log_type == 'incident' else '#4299E1' if entry.log_type == 'change_request' else '#C9A84C' }};">
-    <div class="p-3">
-      <div class="d-flex justify-content-between align-items-start mb-2">
-        <div>
-          <span class="badge bg-light text-dark border me-2">{{ entry.log_type|title|replace('_', ' ') }}</span>
-          <span class="text-muted small">By {{ entry.author.name if entry.author else 'System' }} at {{ entry.logged_at.strftime('%I:%M %p') }}</span>
+  <div class="me-tl-item">
+    <div class="me-tl-dot">
+      <div class="me-tl-circle" style="border-color:{{ 'var(--danger)' if entry.log_type=='incident' else ('var(--info)' if entry.log_type=='change_request' else ('var(--success)' if entry.log_type=='delivery' else 'var(--brand)')) }};">
+        {% if entry.log_type == 'incident' %}<svg viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="2" width="14" height="14"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        {% elif entry.log_type == 'change_request' %}<svg viewBox="0 0 24 24" fill="none" stroke="var(--info)" stroke-width="2" width="14" height="14"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        {% elif entry.log_type == 'delivery' %}<svg viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2" width="14" height="14"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/></svg>
+        {% else %}<svg viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="2" width="14" height="14"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>{% endif %}
+      </div>
+      {% if not loop.last %}<div class="me-tl-line"></div>{% endif %}
+    </div>
+    <div class="me-tl-card {{ entry.log_type }}">
+      <div class="me-tl-header">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="tag {{ 'red' if entry.log_type=='incident' else ('blue' if entry.log_type=='change_request' else ('green' if entry.log_type=='delivery' else 'gold')) }}" style="{% if entry.log_type=='incident' %}background:var(--danger-bg);color:hsl(0,62%,40%);border-color:hsl(0,52%,80%);{% endif %}">{{ entry.log_type | replace('_',' ') | title }}</span>
         </div>
-        {% if current_user.is_admin %}
-        <form action="{{ url_for('event_log.delete_log', event_id=event.id, log_id=entry.id) }}" method="POST">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="me-tl-meta">{{ entry.author.name if entry.author else 'System' }} · {{ entry.logged_at.strftime('%I:%M %p') }}</span>
+          {% if current_user.is_admin %}
+          <form method="POST" action="{{ url_for('event_log.delete_log', event_id=event.id, log_id=entry.id) }}" onsubmit="return confirm('Delete log entry?')">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            <button type="submit" class="btn-icon danger" style="width:24px;height:24px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+      <div class="me-tl-msg">{{ entry.message }}</div>
+      {% if entry.photo_url %}<img src="{{ entry.photo_url }}" style="max-height:180px;border-radius:var(--r-sm);margin-top:10px;border:1px solid var(--admin-border);" />{% endif %}
+      {% if entry.log_type == 'change_request' %}
+      <div style="background:var(--admin-overlay);border:1px solid var(--admin-border);border-radius:var(--r-sm);padding:10px 12px;margin-top:10px;">
+        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;"><span style="color:var(--admin-text-muted);font-weight:600;">Cost Impact</span><strong style="color:var(--danger);">{{ entry.cost_impact | peso }}</strong></div>
+        {% if entry.is_approved_by_client %}
+        <div class="tag green" style="font-size:11px;">Approved by {{ entry.approved_by_name }}</div>
+        {% else %}
+        <form action="{{ url_for('event_log.approve_change', event_id=event.id, log_id=entry.id) }}" method="POST" style="display:flex;gap:8px;margin-top:6px;">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-          <button type="submit" class="btn btn-link text-danger p-0" onclick="return confirm('Delete log entry?')">🗑</button>
+          <input type="text" name="approved_by" class="me-input" placeholder="Client name" required style="flex:1;font-size:12px;padding:6px 10px;" />
+          <button type="submit" class="btn-me btn-gold btn-sm-me">Sign Off</button>
         </form>
         {% endif %}
       </div>
-      <div class="fw-bold mb-1">{{ entry.message }}</div>
-      {% if entry.photo_url %}
-        <div class="mb-2"><img src="{{ entry.photo_url }}" class="rounded shadow-sm" style="max-height: 200px; cursor: pointer;"></div>
-      {% endif %}
-      {% if entry.log_type == 'change_request' %}
-        <div class="p-2 mt-2 rounded bg-light border">
-          <div class="d-flex justify-content-between">
-            <span class="small fw-bold text-muted">COST IMPACT:</span><span class="fw-bold text-danger">{{ entry.cost_impact|peso }}</span>
-          </div>
-          {% if entry.is_approved_by_client %}
-            <div class="text-success small fw-bold mt-2">✅ Approved by {{ entry.approved_by_name }}</div>
-          {% else %}
-            <form action="{{ url_for('event_log.approve_change', event_id=event.id, log_id=entry.id) }}" method="POST" class="d-flex gap-2 mt-2">
-              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-              <input type="text" name="approved_by" class="form-control form-control-sm" placeholder="Client Name" required>
-              <button type="submit" class="btn btn-sm btn-success">Sign Off</button>
-            </form>
-          {% endif %}
-        </div>
       {% endif %}
     </div>
   </div>
   {% else %}
-  <div class="text-center py-5 bg-white rounded shadow-sm text-muted">No logs recorded for this workspace yet.</div>
+  <div class="me-empty"><div class="me-empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg></div><h6>No log entries yet</h6><p>Start recording the event day as it unfolds.</p></div>
   {% endfor %}
 </div>
-
-{# =================== 🚨 FALLBACK =================== #}
-{% else %}
-<div class="text-center py-5 bg-white rounded"><h4>Tab Error: "{{ tab }}" not found.</h4><a href="{{ url_for('events.detail', event_id=event.id, tab='overview') }}" class="btn-gold mt-3">Back to Overview</a></div>
 {% endif %}
+</div>{# end tab content #}
 
-</div>
-
-<div class="modal fade" id="assignTaskModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content border-0 shadow" style="border-radius: 15px;">
-      <div class="modal-header border-0 p-4 pb-0"><h5 class="fw-bold">📌 Assign New Task</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-      <form action="{{ url_for('events.add_task', event_id=event.id) }}" method="POST">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-        <div class="modal-body p-4">
-          <div class="mb-3"><label class="me-form-label small fw-bold text-muted">Description</label><input type="text" name="title" class="form-control bg-light border-0" required></div>
-          <div class="row">
-            <div class="col-md-6 mb-3"><label class="me-form-label small fw-bold text-muted">Assign To</label>
-              <select name="assigned_to" class="form-select bg-light border-0"><option value="">-- Unassigned --</option>{% for user in all_users %}<option value="{{ user.id }}">{{ user.name }}</option>{% endfor %}</select>
-            </div>
-            <div class="col-md-6 mb-3"><label class="me-form-label small fw-bold text-muted">Due Date</label><input type="date" name="due_date" class="form-control bg-light border-0"></div>
+{# ── MODALS ─────────────────────────────────────────────────── #}
+<div class="me-modal-overlay" id="taskModal">
+  <div class="me-modal">
+    <div class="me-modal-header"><h4>Assign Task</h4><button class="me-modal-close" data-modal-close><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <form action="{{ url_for('events.add_task', event_id=event.id) }}" method="POST">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <div class="me-modal-body">
+        <div class="me-form-group"><label class="me-label">Description *</label><input type="text" name="title" class="me-input" required /></div>
+        <div class="form-row cols-2">
+          <div class="me-form-group"><label class="me-label">Assign To</label>
+            <select name="assigned_to" class="me-select"><option value="">Unassigned</option>{% for u in all_users %}<option value="{{ u.id }}">{{ u.name }}</option>{% endfor %}</select>
           </div>
+          <div class="me-form-group"><label class="me-label">Due Date</label><input type="date" name="due_date" class="me-input" /></div>
         </div>
-        <div class="modal-footer border-0 p-4 pt-0"><button type="button" class="btn btn-light px-4" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn-gold px-4">Assign Task</button></div>
-      </form>
-    </div>
-  </div>
-</div>
-
-<div class="modal fade" id="reserveItemModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content border-0 shadow" style="border-radius: 15px;">
-      <div class="modal-header border-0 p-4 pb-0"><h5 class="fw-bold">📦 Reserve Item</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-      <form action="{{ url_for('events.reserve_item', event_id=event.id) }}" method="POST">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-        <div class="modal-body p-4">
-          <div class="mb-3"><label class="me-form-label small fw-bold text-muted">Select Item</label>
-            <select name="item_id" class="form-select bg-light border-0" required>
-              <option value="" disabled selected>Choose...</option>{% for item in inventory_items %}<option value="{{ item.id }}">{{ item.name }}</option>{% endfor %}
-            </select>
-          </div>
-          <div class="mb-0"><label class="me-form-label small fw-bold text-muted">Quantity</label><input type="number" name="quantity" class="form-control bg-light border-0" value="1" min="1" required></div>
-        </div>
-        <div class="modal-footer border-0 p-4 pt-0"><button type="button" class="btn btn-light px-4" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn-gold px-4">Confirm</button></div>
-      </form>
-    </div>
-  </div>
-</div>
-
-<div class="modal fade" id="recordPaymentModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content shadow border-0" style="border-radius: 15px;">
-      <div class="modal-header border-0 p-4 pb-0"><h5 class="fw-bold">💰 Record Payment</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-      <form action="{{ url_for('events.add_payment', event_id=event.id) }}" method="POST" enctype="multipart/form-data">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-        <div class="modal-body p-4">
-          <div class="mb-3"><label class="me-form-label small fw-bold text-muted">Label</label><input type="text" name="label" class="form-control bg-light border-0" placeholder="e.g., Downpayment" required></div>
-          <div class="row">
-            <div class="col-md-6 mb-3"><label class="me-form-label small fw-bold text-muted">Amount (₱)</label><input type="number" step="0.01" name="amount" class="form-control bg-light border-0" required></div>
-            <div class="col-md-6 mb-3"><label class="me-form-label small fw-bold text-muted">Status</label>
-              <select name="status" class="form-select bg-light border-0">{% for pstat in payment_statuses %}<option value="{{ pstat }}">{{ pstat|title }}</option>{% endfor %}</select>
-            </div>
-          </div>
-          <div class="row">
-            <div class="col-md-6 mb-3"><label class="me-form-label small fw-bold text-muted">Payment Type</label>
-              <select name="payment_type" class="form-select bg-light border-0">{% for ptype in payment_types %}<option value="{{ ptype }}">{{ ptype|replace('_',' ')|title }}</option>{% endfor %}</select>
-            </div>
-            <div class="col-md-6 mb-3"><label class="me-form-label small fw-bold text-muted">Due Date</label><input type="date" name="due_date" class="form-control bg-light border-0"></div>
-          </div>
-          <div class="mb-0"><label class="me-form-label small fw-bold text-muted">Proof of Payment</label><input type="file" name="proof_file" class="form-control bg-light border-0" accept=".jpg,.jpeg,.png,.pdf"></div>
-        </div>
-        <div class="modal-footer border-0 p-4 pt-0"><button type="button" class="btn btn-light px-4" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn-gold px-4">Save Payment</button></div>
-      </form>
-    </div>
-  </div>
-</div>
-
-<div class="modal fade" id="addPoModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered modal-lg">
-    <div class="modal-content border-0 shadow" style="border-radius: 15px;">
-      <div class="modal-header border-0 p-4 pb-0">
-        <h5 class="fw-bold">🤝 Create Purchase Order</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
-      <form action="{{ url_for('events.add_po', event_id=event.id) }}" method="POST" enctype="multipart/form-data">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-        <div class="modal-body p-4">
-          <div class="row">
-            <div class="col-md-6 mb-3">
-              <label class="me-form-label small fw-bold text-muted text-uppercase">Select Supplier</label>
-              <select name="supplier_id" class="form-select bg-light border-0" style="padding: 12px; border-radius: 10px;" required>
-                <option value="" disabled selected>Choose a supplier...</option>
-                {% for supplier in suppliers %}
-                  <option value="{{ supplier.id }}">{{ supplier.company_name }}</option>
-                {% endfor %}
-              </select>
-            </div>
-            <div class="col-md-6 mb-3">
-              <label class="me-form-label small fw-bold text-muted text-uppercase">PO Number (Optional)</label>
-              <input type="text" name="po_number" class="form-control bg-light border-0" placeholder="e.g. PO-2026-001" style="padding: 12px; border-radius: 10px;">
-            </div>
-          </div>
-          <div class="mb-3">
-            <label class="me-form-label small fw-bold text-muted text-uppercase">Items / Description</label>
-            <input type="text" name="description" class="form-control bg-light border-0" placeholder="e.g. 100x Tiffany Chairs" required style="padding: 12px; border-radius: 10px;">
-          </div>
-          <div class="row">
-            <div class="col-md-4 mb-3">
-              <label class="me-form-label small fw-bold text-muted text-uppercase">Amount (₱)</label>
-              <input type="number" step="0.01" name="amount" class="form-control bg-light border-0" required style="padding: 12px; border-radius: 10px;">
-            </div>
-            <div class="col-md-4 mb-3">
-              <label class="me-form-label small fw-bold text-muted text-uppercase">Delivery Date</label>
-              <input type="date" name="delivery_date" class="form-control bg-light border-0" style="padding: 12px; border-radius: 10px;">
-            </div>
-            <div class="col-md-4 mb-3">
-              <label class="me-form-label small fw-bold text-muted text-uppercase">Time Window</label>
-              <input type="text" name="delivery_time_window" class="form-control bg-light border-0" placeholder="e.g. 1PM - 3PM" style="padding: 12px; border-radius: 10px;">
-            </div>
-          </div>
-          <div class="row">
-            <div class="col-md-6 mb-0">
-              <label class="me-form-label small fw-bold text-muted text-uppercase">Status</label>
-              <select name="status" class="form-select bg-light border-0" style="padding: 12px; border-radius: 10px;">
-                <option value="pending">Pending</option>
-                <option value="approved">Approved</option>
-                <option value="paid">Paid</option>
-                <option value="delivered">Delivered</option>
-              </select>
-            </div>
-            <div class="col-md-6 mb-0">
-              <label class="me-form-label small fw-bold text-muted text-uppercase">Upload Proof</label>
-              <input type="file" name="proof_file" class="form-control bg-light border-0" accept="image/*,.pdf" style="padding: 10px; border-radius: 10px;">
-            </div>
-          </div>
-        </div>
-        <div class="modal-footer border-0 p-4 pt-0">
-          <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn-gold px-4">Create PO ⚡</button>
-        </div>
-      </form>
-    </div>
+      <div class="me-modal-footer"><button type="button" data-modal-close class="btn-me btn-outline-me">Cancel</button><button type="submit" class="btn-me btn-gold">Assign Task</button></div>
+    </form>
   </div>
 </div>
 
+<div class="me-modal-overlay" id="reserveModal">
+  <div class="me-modal">
+    <div class="me-modal-header"><h4>Reserve Inventory Item</h4><button class="me-modal-close" data-modal-close><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <form action="{{ url_for('events.reserve_item', event_id=event.id) }}" method="POST">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <div class="me-modal-body">
+        <div class="me-form-group"><label class="me-label">Item *</label>
+          <select name="item_id" class="me-select" required><option value="">Select item…</option>{% for item in inventory_items %}<option value="{{ item.id }}">{{ item.name }} ({{ item.available_qty }} avail.)</option>{% endfor %}</select>
+        </div>
+        <div class="me-form-group"><label class="me-label">Quantity</label><input type="number" name="quantity" class="me-input" value="1" min="1" required /></div>
+      </div>
+      <div class="me-modal-footer"><button type="button" data-modal-close class="btn-me btn-outline-me">Cancel</button><button type="submit" class="btn-me btn-gold">Reserve</button></div>
+    </form>
+  </div>
+</div>
+
+<div class="me-modal-overlay" id="paymentModal">
+  <div class="me-modal">
+    <div class="me-modal-header"><h4>Record Payment</h4><button class="me-modal-close" data-modal-close><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <form action="{{ url_for('events.add_payment', event_id=event.id) }}" method="POST" enctype="multipart/form-data">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <div class="me-modal-body">
+        <div class="me-form-group"><label class="me-label">Label *</label><input type="text" name="label" class="me-input" placeholder="e.g. Downpayment" required /></div>
+        <div class="form-row cols-2">
+          <div class="me-form-group"><label class="me-label">Amount (₱) *</label><input type="number" name="amount" class="me-input" step="0.01" min="0" required /></div>
+          <div class="me-form-group"><label class="me-label">Status</label>
+            <select name="status" class="me-select">{% for s in payment_statuses %}<option value="{{ s }}">{{ s | title }}</option>{% endfor %}</select>
+          </div>
+        </div>
+        <div class="form-row cols-2">
+          <div class="me-form-group"><label class="me-label">Payment Type</label>
+            <select name="payment_type" class="me-select">{% for t in payment_types %}<option value="{{ t }}">{{ t | replace('_',' ') | title }}</option>{% endfor %}</select>
+          </div>
+          <div class="me-form-group"><label class="me-label">Due Date</label><input type="date" name="due_date" class="me-input" /></div>
+        </div>
+        <div class="me-form-group"><label class="me-label">Proof of Payment</label><input type="file" name="proof_file" class="me-input" style="padding:8px;cursor:pointer;" accept=".jpg,.jpeg,.png,.pdf" /></div>
+      </div>
+      <div class="me-modal-footer"><button type="button" data-modal-close class="btn-me btn-outline-me">Cancel</button><button type="submit" class="btn-me btn-gold">Save Payment</button></div>
+    </form>
+  </div>
+</div>
+
+<div class="me-modal-overlay" id="poModal">
+  <div class="me-modal lg">
+    <div class="me-modal-header"><h4>Create Purchase Order</h4><button class="me-modal-close" data-modal-close><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <form action="{{ url_for('events.add_po', event_id=event.id) }}" method="POST" enctype="multipart/form-data">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <div class="me-modal-body">
+        <div class="form-row cols-2">
+          <div class="me-form-group"><label class="me-label">Supplier *</label>
+            <select name="supplier_id" class="me-select" required><option value="">Choose…</option>{% for s in suppliers %}<option value="{{ s.id }}">{{ s.company_name }}</option>{% endfor %}</select>
+          </div>
+          <div class="me-form-group"><label class="me-label">PO Number</label><input type="text" name="po_number" class="me-input" placeholder="PO-2025-001" /></div>
+        </div>
+        <div class="me-form-group"><label class="me-label">Items / Description *</label><input type="text" name="description" class="me-input" placeholder="e.g. 100x Tiffany Chairs" required /></div>
+        <div class="form-row cols-3">
+          <div class="me-form-group"><label class="me-label">Amount (₱) *</label><input type="number" name="amount" class="me-input" step="0.01" required /></div>
+          <div class="me-form-group"><label class="me-label">Delivery Date</label><input type="date" name="delivery_date" class="me-input" /></div>
+          <div class="me-form-group"><label class="me-label">Status</label>
+            <select name="status" class="me-select"><option value="pending">Pending</option><option value="downpaid">Downpaid</option><option value="fully_paid">Fully Paid</option></select>
+          </div>
+        </div>
+        <div class="me-form-group"><label class="me-label">Upload Proof</label><input type="file" name="proof_file" class="me-input" style="padding:8px;cursor:pointer;" accept="image/*,.pdf" /></div>
+      </div>
+      <div class="me-modal-footer"><button type="button" data-modal-close class="btn-me btn-outline-me">Cancel</button><button type="submit" class="btn-me btn-gold">Create PO</button></div>
+    </form>
+  </div>
+</div>
+
+<div class="me-modal-overlay" id="addPegModal">
+  <div class="me-modal">
+    <div class="me-modal-header"><h4>Add Moodboard Peg</h4><button class="me-modal-close" data-modal-close><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <form action="{{ url_for('events.add_peg', event_id=event.id) }}" method="POST" enctype="multipart/form-data">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <div class="me-modal-body">
+        <div class="form-row cols-2">
+          <div class="me-form-group"><label class="me-label">Title *</label><input type="text" name="title" class="me-input" required /></div>
+          <div class="me-form-group"><label class="me-label">Category</label>
+            <select name="category" class="me-select">{% for c in peg_categories %}<option value="{{ c }}">{{ c | replace('_',' ') | title }}</option>{% endfor %}</select>
+          </div>
+        </div>
+        <div class="me-form-group"><label class="me-label">Image *</label><input type="file" name="peg_image" class="me-input" style="padding:8px;cursor:pointer;" accept="image/*" required /></div>
+      </div>
+      <div class="me-modal-footer"><button type="button" data-modal-close class="btn-me btn-outline-me">Cancel</button><button type="submit" class="btn-me btn-gold">Upload Peg</button></div>
+    </form>
+  </div>
+</div>
+
+<div class="me-modal-overlay" id="logModal">
+  <div class="me-modal">
+    <div class="me-modal-header"><h4>New Log Entry</h4><button class="me-modal-close" data-modal-close><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <form action="{{ url_for('event_log.add_log', event_id=event.id) }}" method="POST" enctype="multipart/form-data">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <div class="me-modal-body">
+        <div class="me-form-group"><label class="me-label">Log Type</label>
+          <select name="log_type" class="me-select">
+            <option value="note">Note / Update</option>
+            <option value="incident">Incident / Issue</option>
+            <option value="change_request">Change Request</option>
+            <option value="delivery">Delivery / Arrival</option>
+          </select>
+        </div>
+        <div class="me-form-group"><label class="me-label">Message *</label><input type="text" name="message" class="me-input" placeholder="What happened?" required /></div>
+        <div class="form-row cols-2">
+          <div class="me-form-group"><label class="me-label">Cost Impact (₱)</label><input type="number" name="cost_impact" class="me-input" step="0.01" placeholder="0.00" /></div>
+          <div class="me-form-group"><label class="me-label">Photo</label><input type="file" name="photo" class="me-input" style="padding:8px;cursor:pointer;" accept="image/*" /></div>
+        </div>
+      </div>
+      <div class="me-modal-footer"><button type="button" data-modal-close class="btn-me btn-outline-me">Cancel</button><button type="submit" class="btn-me btn-gold">Add Entry</button></div>
+    </form>
+  </div>
+</div>
 {% endblock %}
