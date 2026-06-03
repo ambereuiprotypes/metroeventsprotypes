@@ -1,99 +1,56 @@
 {% extends "base.html" %}
-{% block title %}Taglish Templates — Metro Events{% endblock %}
+{% block title %}Reminder Templates{% endblock %}
+{% block page_title %}Reminder Templates{% endblock %}
+{% block breadcrumb %}<a href="{{ url_for('reminders.index') }}" style="color:inherit;">Reminders</a> / Templates{% endblock %}
+{% block topbar_actions %}
+<button class="btn-me btn-gold" data-modal-open="addTemplateModal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>New Template</button>
+{% endblock %}
 {% block content %}
-<div class="d-flex align-items-center gap-2 mb-3">
-  <a href="{{ url_for('reminders.index') }}" class="btn btn-sm btn-outline-secondary">← Reminders</a>
-  <h2>📝 Taglish Auto-Reply Templates</h2>
-</div>
-
-<div class="row g-3">
-  <!-- Template Selector -->
-  <div class="col-md-4">
-    <div class="card shadow-sm">
-      <div class="card-header fw-bold">Templates</div>
-      <div class="list-group list-group-flush" id="tplList">
-        {% for key, tpl in templates.items() %}
-        <a href="?template={{ key }}&client_id={{ selected_client.id if selected_client else '' }}&event_id={{ selected_event.id if selected_event else '' }}"
-           class="list-group-item list-group-item-action {% if key == tpl_key %}active{% endif %}">
-          {{ tpl.label }}
-        </a>
-        {% endfor %}
+<div class="me-card">
+  <div class="me-card-body p-0">
+    {% if templates %}
+    {% for t in templates %}
+    <div style="display:flex;align-items:flex-start;gap:14px;padding:16px 20px;border-bottom:1px solid var(--admin-border);">
+      <div style="width:36px;height:36px;background:var(--brand-light);border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--brand-dark)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
       </div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:14px;font-weight:700;color:var(--admin-text);margin-bottom:3px;">{{ t.name }}</div>
+        <div style="font-size:13px;color:var(--admin-text-2);line-height:1.55;">{{ t.message_template }}</div>
+        <div style="margin-top:6px;display:flex;gap:8px;">
+          <span class="tag {{ 'gold' if t.type=='payment' else ('blue' if t.type=='meeting' else 'gray') }}">{{ t.type | title }}</span>
+          {% if t.days_before %}<span class="tag gray">{{ t.days_before }}d before</span>{% endif %}
+        </div>
+      </div>
+      <form method="POST" action="{{ url_for('reminders.delete_template', template_id=t.id) }}" onsubmit="return confirm('Delete template?')">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <button type="submit" class="btn-icon danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
+      </form>
     </div>
-
-    <!-- Client & Event selectors -->
-    <div class="card shadow-sm mt-3">
-      <div class="card-header fw-bold">Fill-in Data</div>
-      <div class="card-body">
-        <form method="get">
-          <input type="hidden" name="template" value="{{ tpl_key }}">
-          <div class="mb-2">
-            <label class="form-label small">Client</label>
-            <select name="client_id" class="form-select form-select-sm" onchange="this.form.submit()">
-              <option value="">— Choose Client —</option>
-              {% for c in clients %}
-              <option value="{{ c.id }}" {% if selected_client and c.id == selected_client.id %}selected{% endif %}>
-                {{ c.full_name }}
-              </option>
-              {% endfor %}
-            </select>
-          </div>
-          <div class="mb-2">
-            <label class="form-label small">Event</label>
-            <select name="event_id" class="form-select form-select-sm" onchange="this.form.submit()">
-              <option value="">— Choose Event —</option>
-              {% for e in events %}
-              <option value="{{ e.id }}" {% if selected_event and e.id == selected_event.id %}selected{% endif %}>
-                {{ e.name }}
-              </option>
-              {% endfor %}
-            </select>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-
-  <!-- Template Preview -->
-  <div class="col-md-8">
-    <div class="card shadow-sm h-100">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <span class="fw-bold">Preview</span>
-        <button class="btn btn-sm btn-outline-secondary" onclick="copyText()">📋 Copy</button>
-      </div>
-      <div class="card-body">
-        <label class="form-label small text-muted">Subject:</label>
-        <div class="form-control bg-light mb-3" id="subject">{{ rendered_subject }}</div>
-
-        <label class="form-label small text-muted">Message Body:</label>
-        <textarea class="form-control font-monospace" id="body" rows="16"
-                  style="font-size:13px">{{ rendered_body }}</textarea>
-      </div>
-      <div class="card-footer d-flex gap-2">
-        {% if selected_client and selected_client.email %}
-        <a href="mailto:{{ selected_client.email }}?subject={{ rendered_subject | urlencode }}"
-           class="btn btn-primary btn-sm">📧 Open in Mail</a>
-        {% endif %}
-        {% if selected_client and selected_client.phone %}
-        <a href="https://wa.me/{{ selected_client.phone | replace(' ','') | replace('+','') }}"
-           target="_blank" class="btn btn-success btn-sm">💬 WhatsApp</a>
-        {% endif %}
-        <button onclick="copyText()" class="btn btn-outline-secondary btn-sm">
-          📋 Copy Body
-        </button>
-      </div>
-    </div>
+    {% endfor %}
+    {% else %}
+    <div class="me-empty"><div class="me-empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg></div><h6>No templates yet</h6><p>Create reusable reminder templates for common follow-ups.</p></div>
+    {% endif %}
   </div>
 </div>
 
-<script>
-function copyText() {
-  const body = document.getElementById('body');
-  body.select();
-  document.execCommand('copy');
-  const btn = event.target;
-  btn.textContent = '✅ Copied!';
-  setTimeout(() => btn.textContent = '📋 Copy Body', 2000);
-}
-</script>
+<div class="me-modal-overlay" id="addTemplateModal">
+  <div class="me-modal">
+    <div class="me-modal-header"><h4>New Reminder Template</h4><button class="me-modal-close" data-modal-close><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <form method="POST" action="{{ url_for('reminders.new_template') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <div class="me-modal-body">
+        <div class="me-form-group"><label class="me-label">Template Name *</label><input type="text" name="name" class="me-input" placeholder="e.g. 7-Day Payment Reminder" required /></div>
+        <div class="form-row cols-2">
+          <div class="me-form-group"><label class="me-label">Type</label>
+            <select name="type" class="me-select"><option value="payment">Payment</option><option value="meeting">Meeting</option><option value="general">General</option></select>
+          </div>
+          <div class="me-form-group"><label class="me-label">Days Before Event</label><input type="number" name="days_before" class="me-input" placeholder="7" min="0" /></div>
+        </div>
+        <div class="me-form-group"><label class="me-label">Message Template *</label><textarea name="message_template" class="me-textarea" required placeholder="Hi {client_name}, just a reminder that your {payment_label} of {amount} is due on {due_date}."></textarea><div class="me-input-hint">Use {client_name}, {event_name}, {amount}, {due_date} as placeholders.</div></div>
+      </div>
+      <div class="me-modal-footer"><button type="button" data-modal-close class="btn-me btn-outline-me">Cancel</button><button type="submit" class="btn-me btn-gold">Save Template</button></div>
+    </form>
+  </div>
+</div>
 {% endblock %}
