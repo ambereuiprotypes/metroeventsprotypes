@@ -1,10 +1,26 @@
 {% extends "base.html" %}
-{% block title %}403 Forbidden{% endblock %}
+{% block title %}403 — Forbidden{% endblock %}
+{% block auth_content %}
+<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--admin-canvas);font-family:'Sora',sans-serif;">
+  <div style="text-align:center;padding:40px;max-width:420px;">
+    <div style="font-family:'Cormorant Garamond',serif;font-size:100px;font-weight:700;color:var(--admin-border);line-height:1;margin-bottom:4px;">403</div>
+    <h2 style="font-size:20px;font-weight:700;color:var(--admin-text);margin:0 0 10px;letter-spacing:-.02em;">Access Denied</h2>
+    <p style="font-size:14px;color:var(--admin-text-2);max-width:300px;margin:0 auto 28px;line-height:1.65;">You don't have permission to view this page. Contact an administrator if you think this is a mistake.</p>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+      <a href="/" class="btn-me btn-gold">Go to Homepage</a>
+      <a href="javascript:history.back()" class="btn-me btn-outline-me">Go Back</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
 {% block content %}
-<div class="text-center py-5">
-  <div style="font-size:5rem;">🚫</div>
-  <h2 style="font-weight:800;color:#1A1A2E;">403 — Access Denied</h2>
-  <p class="text-muted-sm">You don't have permission to access this page.</p>
-  <a href="{{ url_for('dashboard.index') }}" class="btn-gold mt-3">← Back to Dashboard</a>
+<div style="text-align:center;padding:80px 40px;">
+  <div style="font-family:'Cormorant Garamond',serif;font-size:72px;font-weight:700;color:var(--admin-border);line-height:1;margin-bottom:4px;">403</div>
+  <h2 style="font-size:20px;font-weight:700;color:var(--admin-text);margin:0 0 10px;">Access Denied</h2>
+  <p style="font-size:14px;color:var(--admin-text-2);max-width:300px;margin:0 auto 24px;">You don't have permission to view this page.</p>
+  <div style="display:flex;gap:10px;justify-content:center;">
+    <a href="{{ url_for('dashboard.index') }}" class="btn-me btn-outline-me">Dashboard</a>
+    <a href="javascript:history.back()" class="btn-me btn-gold">Go Back</a>
+  </div>
 </div>
 {% endblock %}
