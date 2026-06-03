@@ -1,168 +1,78 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register - {{ APP_NAME }}</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        .card-register {
-            border: none;
-            border-radius: 12px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-            max-width: 450px;
-            width: 100%;
-        }
-        .card-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 12px 12px 0 0;
-            padding: 2rem;
-            text-align: center;
-        }
-        .card-header h2 {
-            margin: 0;
-            font-weight: 700;
-            font-size: 1.8rem;
-        }
-        .card-header p {
-            margin: 0.5rem 0 0 0;
-            opacity: 0.9;
-            font-size: 0.95rem;
-        }
-        .form-group {
-            margin-bottom: 1.2rem;
-        }
-        .form-control {
-            border-radius: 8px;
-            border: 1px solid #e0e0e0;
-            padding: 0.75rem;
-            font-size: 0.95rem;
-        }
-        .form-control:focus {
-            border-color: #667eea;
-            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
-        }
-        .btn-register {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border: none;
-            border-radius: 8px;
-            padding: 0.75rem;
-            font-weight: 600;
-            font-size: 1rem;
-            width: 100%;
-            margin-top: 1rem;
-        }
-        .btn-register:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
-            color: white;
-        }
-        .login-link {
-            text-align: center;
-            margin-top: 1.5rem;
-            font-size: 0.95rem;
-        }
-        .login-link a {
-            color: #667eea;
-            text-decoration: none;
-            font-weight: 600;
-        }
-        .login-link a:hover {
-            text-decoration: underline;
-        }
-        .alert {
-            border-radius: 8px;
-            border: none;
-        }
-        .form-text {
-            font-size: 0.85rem;
-            color: #666;
-            margin-top: 0.3rem;
-        }
-    </style>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Create Account — {{ APP_NAME }}</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/metro.css') }}" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,400&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet" />
 </head>
-<body>
-    <div class="container">
-        <div class="card card-register">
-            <div class="card-header">
-                <h2>📋 Create Your Account</h2>
-                <p>Order events with {{ APP_NAME }}</p>
-            </div>
-            <div class="card-body p-4">
-                <!-- Flash Messages -->
-                {% with messages = get_flashed_messages(with_categories=true) %}
-                    {% if messages %}
-                        {% for category, message in messages %}
-                            <div class="alert alert-{{ 'danger' if category == 'danger' else 'warning' if category == 'warning' else 'info' if category == 'info' else 'success' }} alert-dismissible fade show" role="alert">
-                                {{ message }}
-                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                            </div>
-                        {% endfor %}
-                    {% endif %}
-                {% endwith %}
+<body class="client-layout" style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--client-canvas);padding:24px 0;">
+<div style="width:100%;max-width:480px;padding:16px;">
 
-                <form method="POST" novalidate>
-                    <!-- Full Name -->
-                    <div class="form-group">
-                        <label for="name" class="form-label">Full Name</label>
-                        <input type="text" class="form-control" id="name" name="name" 
-                               placeholder="Juan Dela Cruz" required>
-                    </div>
+  <div style="text-align:center;margin-bottom:28px;">
+    <a href="{{ url_for('public.index') }}" style="display:inline-flex;align-items:center;gap:8px;text-decoration:none;margin-bottom:20px;">
+      <div style="width:34px;height:34px;background:linear-gradient(135deg,var(--brand),var(--brand-dark));border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+      </div>
+      <span style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:700;color:var(--client-text);">{{ APP_NAME }}</span>
+    </a>
+    <div style="font-family:'DM Sans',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--brand-dark);margin-bottom:8px;">Client Portal</div>
+    <h1 style="font-family:'Cormorant Garamond',serif;font-size:30px;font-weight:700;color:var(--client-text);margin:0 0 8px;letter-spacing:-.03em;">Create your account</h1>
+    <p style="font-family:'DM Sans',sans-serif;font-size:14px;color:var(--client-text-muted);margin:0;">Already have one? <a href="{{ url_for('client_auth.login') }}" style="color:var(--brand-dark);font-weight:600;">Sign in</a></p>
+  </div>
 
-                    <!-- Email -->
-                    <div class="form-group">
-                        <label for="email" class="form-label">Email Address</label>
-                        <input type="email" class="form-control" id="email" name="email" 
-                               placeholder="you@example.com" required>
-                    </div>
+  <div class="client-form-card">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for cat, msg in messages %}
+        <div class="me-alert me-alert-{{ 'danger' if cat in ['error','danger'] else cat }}" style="margin-bottom:16px;font-family:'DM Sans',sans-serif;"><span>{{ msg }}</span></div>
+      {% endfor %}
+    {% endwith %}
 
-                    <!-- Phone -->
-                    <div class="form-group">
-                        <label for="phone" class="form-label">Phone Number (Optional)</label>
-                        <input type="tel" class="form-control" id="phone" name="phone" 
-                               placeholder="+63 900 000 0000">
-                    </div>
+    <form method="POST" action="{{ url_for('client_auth.register') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
 
-                    <!-- Password -->
-                    <div class="form-group">
-                        <label for="password" class="form-label">Password</label>
-                        <input type="password" class="form-control" id="password" name="password" 
-                               placeholder="Min 8 characters" required>
-                        <small class="form-text">At least 8 characters, mix of uppercase & lowercase</small>
-                    </div>
-
-                    <!-- Confirm Password -->
-                    <div class="form-group">
-                        <label for="password_confirm" class="form-label">Confirm Password</label>
-                        <input type="password" class="form-control" id="password_confirm" 
-                               name="password_confirm" placeholder="Re-enter password" required>
-                    </div>
-
-                    <!-- Submit -->
-                    <button type="submit" class="btn btn-primary btn-register">
-                        Create Account ✨
-                    </button>
-                </form>
-
-                <!-- Login Link -->
-                <div class="login-link">
-                    Already have an account? 
-                    <a href="{{ url_for('client_auth.login') }}">Log In Here</a>
-                </div>
-            </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <div style="grid-column:1/-1;">
+          <label class="client-label" for="name">Full Name <span style="color:var(--danger)">*</span></label>
+          <input type="text" id="name" name="name" class="client-input" placeholder="Maria Santos" required autocomplete="name" />
         </div>
-    </div>
+        <div style="grid-column:1/-1;">
+          <label class="client-label" for="email">Email Address <span style="color:var(--danger)">*</span></label>
+          <input type="email" id="email" name="email" class="client-input" placeholder="maria@example.com" required autocomplete="email" />
+        </div>
+        <div>
+          <label class="client-label" for="phone">Phone Number</label>
+          <input type="tel" id="phone" name="phone" class="client-input" placeholder="+63 9XX XXX XXXX" autocomplete="tel" />
+        </div>
+        <div>
+          <label class="client-label" for="city">City</label>
+          <input type="text" id="city" name="city" class="client-input" placeholder="Makati City" />
+        </div>
+        <div style="grid-column:1/-1;position:relative;">
+          <label class="client-label" for="password">Password <span style="color:var(--danger)">*</span></label>
+          <input type="password" id="password" name="password" class="client-input" placeholder="Minimum 8 characters" required autocomplete="new-password" minlength="8" />
+          <button type="button" onclick="togglePwd('password')" style="position:absolute;right:12px;top:34px;background:none;border:none;cursor:pointer;color:var(--client-text-muted);display:flex;align-items:center;padding:0;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+      </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+      <div style="margin:16px 0;padding:12px 14px;background:var(--client-overlay);border:1px solid var(--client-border);border-radius:var(--r-sm);font-family:'DM Sans',sans-serif;font-size:12.5px;color:var(--client-text-muted);line-height:1.6;">
+        Your account will be reviewed by our team before activation. You'll receive a confirmation email within 24 hours.
+      </div>
+
+      <button type="submit" class="btn-client btn-client-gold" style="width:100%;justify-content:center;padding:13px;font-size:15px;">
+        Create Client Account
+      </button>
+    </form>
+
+    <div style="text-align:center;margin-top:20px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--client-text-muted);">
+      Are you a team member? <a href="{{ url_for('auth.login') }}" style="color:var(--client-text-2);font-weight:600;">Team Login</a>
+    </div>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>function togglePwd(id){const i=document.getElementById(id);i.type=i.type==='password'?'text':'password';}</script>
 </body>
 </html>
