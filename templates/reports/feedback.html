@@ -1,51 +1,39 @@
 {% extends "base.html" %}
-{% block title %}Feedback Scores — Metro Events{% endblock %}
+{% block title %}Feedback Report{% endblock %}
+{% block page_title %}Client Feedback Report{% endblock %}
+{% block breadcrumb %}<a href="{{ url_for('reports.index') }}" style="color:inherit;">Reports</a> / Feedback{% endblock %}
 {% block content %}
-<div class="d-flex align-items-center gap-2 mb-3">
-  <a href="{{ url_for('reports.index') }}" class="btn btn-sm btn-outline-secondary">← Reports</a>
-  <h2>💬 Post-Event Feedback</h2>
-  <form class="ms-auto d-flex gap-2" method="get">
-    <select name="year" class="form-select form-select-sm">
-      {% for y in years %}<option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>{% endfor %}
-    </select>
-    <button class="btn btn-outline-secondary btn-sm">Go</button>
-  </form>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px;">
+  {% for label,val,color in [('Total Reviews',total_reviews,'gold'),('Average Rating',avg_rating,'green'),('5-Star Reviews',five_star,'blue')] %}
+  <div class="me-card" style="padding:16px 18px;display:flex;align-items:center;gap:14px;">
+    <div class="kpi-icon {{ color }}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+    </div>
+    <div><div class="kpi-value" style="font-size:26px;">{{ val }}</div><div class="kpi-label">{{ label }}</div></div>
+  </div>
+  {% endfor %}
 </div>
-<div class="card shadow-sm">
-  <div class="card-body p-0">
-    <table class="table table-hover mb-0">
-      <thead class="table-dark">
-        <tr>
-          <th>Event</th><th>Date</th><th>Overall</th><th>Design</th>
-          <th>Coord.</th><th>On-Time</th><th>Crew</th><th>Value</th>
-          <th>Recommend</th><th>Testimonial</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for ae in entries %}
-        {% set e = ae.event %}
-        <tr>
-          <td><a href="{{ url_for('events.detail', event_id=e.id, tab='after_event') }}">{{ e.name }}</a></td>
-          <td><small>{{ e.event_date | dateformat }}</small></td>
-          {% for r in [ae.rating_overall, ae.rating_design, ae.rating_coordination,
-                       ae.rating_on_time, ae.rating_crew, ae.rating_value] %}
-          <td class="text-warning">{{ '★' * (r or 0) if r else '—' }}</td>
-          {% endfor %}
-          <td>{% if ae.would_recommend %}✅{% else %}❌{% endif %}</td>
-          <td>
-            {% if ae.client_feedback %}
-            <button class="btn btn-sm btn-outline-secondary py-0"
-                    data-bs-toggle="tooltip" title="{{ ae.client_feedback }}">
-              View
-            </button>
-            {% else %}—{% endif %}
-          </td>
-        </tr>
-        {% else %}
-        <tr><td colspan="10" class="text-muted text-center py-3">No feedback yet for {{ year }}.</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
+
+<div class="me-card">
+  <div class="me-card-header"><h5><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>All Reviews</h5></div>
+  <div class="me-card-body p-0">
+    {% for r in reviews %}
+    <div style="padding:18px 22px;border-bottom:1px solid var(--admin-border);">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:8px;">
+        <div>
+          <div style="font-size:14px;font-weight:700;color:var(--admin-text);margin-bottom:2px;">{{ r.event.name if r.event else '—' }}</div>
+          <div class="event-sub">{{ r.event.client.full_name if r.event and r.event.client else '—' }}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:4px;">
+          {% for i in range(5) %}<span style="font-size:16px;color:{{ 'var(--brand)' if i < r.rating else 'var(--admin-border)' }};">&#9733;</span>{% endfor %}
+        </div>
+      </div>
+      {% if r.comment %}<p style="font-size:13.5px;color:var(--admin-text-2);line-height:1.65;margin:0;font-style:italic;">"{{ r.comment }}"</p>{% endif %}
+      <div class="text-muted-sm" style="margin-top:8px;">{{ r.created_at | dateformat }}</div>
+    </div>
+    {% else %}
+    <div class="me-empty"><div class="me-empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div><h6>No reviews yet</h6></div>
+    {% endfor %}
   </div>
 </div>
 {% endblock %}

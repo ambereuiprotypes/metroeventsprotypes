@@ -1,206 +1,111 @@
 {% extends "base.html" %}
-{% block title %}Reports & Analytics — Metro Events{% endblock %}
+{% block title %}Reports{% endblock %}
+{% block page_title %}Reports & Analytics{% endblock %}
+{% block breadcrumb %}Financial overview and business insights{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-  <h2>📊 Reports & Analytics</h2>
-  <form class="d-flex gap-2" method="get">
-    <select name="year" class="form-select form-select-sm">
-      {% for y in years %}
-      <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
-      {% endfor %}
-    </select>
-    <button class="btn btn-outline-secondary btn-sm">Go</button>
-  </form>
+
+<div class="kpi-grid">
+  {% for label,val,sub,color in [
+    ('Total Revenue',   total_revenue | peso,   'All paid invoices',      'gold'),
+    ('Outstanding',     outstanding | peso,      'Pending payments',       'red'),
+    ('Events This Month', events_this_month,     'Current month',          'blue'),
+    ('Avg Event Value', avg_event_value | peso,  'Per completed event',    'green'),
+  ] %}
+  <div class="kpi-card {{ color }}">
+    <div class="kpi-icon {{ color }}">
+      {% if color=='gold' %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      {% elif color=='red' %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+      {% elif color=='blue' %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      {% else %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>{% endif %}
+    </div>
+    <div>
+      <div class="kpi-value">{{ val }}</div>
+      <div class="kpi-label">{{ label }}</div>
+      <div class="kpi-delta up">{{ sub }}</div>
+    </div>
+  </div>
+  {% endfor %}
 </div>
 
-<!-- Summary Cards -->
-<div class="row g-3 mb-4">
-  <div class="col-6 col-md-3">
-    <div class="card text-center border-primary shadow-sm">
-      <div class="card-body py-3">
-        <div class="h3 text-primary">{{ monthly | sum(attribute='count') }}</div>
-        <small class="text-muted">Events {{ year }}</small>
+<div class="row g-4 mb-4">
+  <div class="col-lg-6">
+    <div class="me-card h-100">
+      <div class="me-card-header">
+        <h6><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Events by Status</h6>
       </div>
-    </div>
-  </div>
-  <div class="col-6 col-md-3">
-    <div class="card text-center border-success shadow-sm">
-      <div class="card-body py-3">
-        <div class="h3 text-success">₱{{ '{:,.0f}'.format(monthly | sum(attribute='revenue')) }}</div>
-        <small class="text-muted">Total Revenue</small>
-      </div>
-    </div>
-  </div>
-  <div class="col-6 col-md-3">
-    <div class="card text-center border-info shadow-sm">
-      <div class="card-body py-3">
-        <div class="h3 text-info">{{ conversion_rate }}%</div>
-        <small class="text-muted">Conversion Rate</small>
-      </div>
-    </div>
-  </div>
-  <div class="col-6 col-md-3">
-    <div class="card text-center border-warning shadow-sm">
-      <div class="card-body py-3">
-        <div class="h3 text-warning">{{ total_inquiries }}</div>
-        <small class="text-muted">Total Inquiries</small>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div class="row g-3">
-  <!-- Monthly bookings chart (Chart.js) -->
-  <div class="col-md-7">
-    <div class="card shadow-sm">
-      <div class="card-header fw-bold">📅 Monthly Bookings & Revenue ({{ year }})</div>
-      <div class="card-body">
-        <canvas id="monthlyChart" height="200"></canvas>
-      </div>
-    </div>
-  </div>
-
-  <!-- CRM Funnel -->
-  <div class="col-md-5">
-    <div class="card shadow-sm">
-      <div class="card-header fw-bold">🔄 CRM Pipeline Funnel</div>
-      <div class="card-body">
-        {% for stage, count in funnel.items() %}
-        <div class="mb-2">
-          <div class="d-flex justify-content-between small mb-1">
-            <span>{{ stage.replace('_',' ').title() }}</span>
-            <strong>{{ count }}</strong>
-          </div>
-          <div class="progress" style="height:12px">
-            <div class="progress-bar" style="width:{% if total_inquiries %}{{ (count / total_inquiries * 100)|int }}{% else %}0{% endif %}%">
+      <div class="me-card-body">
+        {% for s, count in status_breakdown.items() %}
+        {% set total_pct = ((count / total_events * 100) | int) if total_events else 0 %}
+        <div style="margin-bottom:14px;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:5px;font-size:13px;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span class="status-badge {{ s }}" style="font-size:10px;">{{ s.replace('_',' ') | title }}</span>
             </div>
+            <span style="font-weight:700;color:var(--admin-text);">{{ count }}</span>
+          </div>
+          <div style="height:6px;background:var(--admin-border);border-radius:var(--r-full);overflow:hidden;">
+            <div style="height:100%;width:{{ total_pct }}%;background:var(--brand);border-radius:var(--r-full);transition:width .8s ease;"></div>
           </div>
         </div>
         {% endfor %}
       </div>
     </div>
   </div>
-
-  <!-- Event type breakdown -->
-  <div class="col-md-5">
-    <div class="card shadow-sm">
-      <div class="card-header fw-bold">🎭 Events by Type</div>
-      <div class="card-body">
-        {% for evt_type, cnt in type_counts %}
-        <div class="d-flex justify-content-between py-1 border-bottom">
-          <span>{{ evt_type.title() }}</span>
-          <strong>{{ cnt }}</strong>
-        </div>
-        {% else %}
-        <p class="text-muted">No events found.</p>
-        {% endfor %}
+  <div class="col-lg-6">
+    <div class="me-card h-100">
+      <div class="me-card-header">
+        <h6><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>Recent Payments</h6>
+        <span class="tag gray">{{ recent_payments | length }} entries</span>
       </div>
-    </div>
-  </div>
-
-  <!-- Top Events by Revenue -->
-  <div class="col-md-7">
-    <div class="card shadow-sm">
-      <div class="card-header fw-bold">🏆 Top Revenue Events ({{ year }})</div>
-      <div class="card-body p-0">
-        <table class="table table-sm mb-0">
-          <thead class="table-light">
-            <tr><th>Event</th><th>Type</th><th>Revenue</th></tr>
-          </thead>
+      <div class="me-card-body p-0">
+        <div class="me-table-wrap">
+        <table class="me-table">
+          <thead><tr><th>Event</th><th>Label</th><th>Amount</th><th>Date</th><th>Status</th></tr></thead>
           <tbody>
-            {% for event, total_paid in top_events %}
+            {% for p in recent_payments %}
             <tr>
-              <td>
-                <a href="{{ url_for('events.detail', event_id=event.id) }}">
-                  {{ event.name }}
-                </a>
-              </td>
-              <td><span class="badge bg-secondary">{{ event.event_type }}</span></td>
-              <td class="text-success fw-bold">₱{{ '{:,.2f}'.format(total_paid) }}</td>
+              <td style="font-size:12px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ p.event.name if p.event else '—' }}</td>
+              <td style="font-size:12px;">{{ p.label }}</td>
+              <td style="font-weight:700;font-size:13px;color:var(--success);">{{ p.amount | peso }}</td>
+              <td class="text-muted-sm">{{ p.paid_date | dateformat if p.paid_date else '—' }}</td>
+              <td><span class="status-badge {{ 'done' if p.status == 'paid' else 'planning' }}" style="font-size:10px;">{{ p.status | title }}</span></td>
             </tr>
             {% else %}
-            <tr><td colspan="3" class="text-muted text-center">No payment data.</td></tr>
+            <tr><td colspan="5"><div class="me-empty" style="padding:20px;"><h6>No payments yet</h6></div></td></tr>
             {% endfor %}
           </tbody>
         </table>
-      </div>
-    </div>
-  </div>
-
-  <!-- Post-event ratings -->
-  {% if avg_ratings %}
-  <div class="col-12">
-    <div class="card shadow-sm">
-      <div class="card-header fw-bold">⭐ Average Post-Event Ratings ({{ year }})</div>
-      <div class="card-body">
-        <div class="row g-3 text-center">
-          {% set labels = [('Overall', avg_ratings.overall), ('Design', avg_ratings.design),
-                           ('Coordination', avg_ratings.coord), ('On-time', avg_ratings.ontime),
-                           ('Crew', avg_ratings.crew), ('Value', avg_ratings.value)] %}
-          {% for label, val in labels %}
-          <div class="col-6 col-md-2">
-            <div class="h4 text-warning">{{ '%.1f'|format(val or 0) }}</div>
-            <div class="text-muted small">{{ label }}</div>
-            <div class="text-warning small">{{ '★' * ((val or 0)|int) }}</div>
-          </div>
-          {% endfor %}
         </div>
       </div>
     </div>
   </div>
-  {% endif %}
 </div>
 
-<!-- Navigation to sub-reports -->
-<div class="mt-4 d-flex gap-2">
-  <a href="{{ url_for('reports.inventory_report') }}" class="btn btn-outline-primary">
-    📦 Inventory Utilization
-  </a>
-  <a href="{{ url_for('reports.supplier_report') }}" class="btn btn-outline-primary">
-    🏭 Supplier Performance
-  </a>
-  <a href="{{ url_for('reports.feedback_report') }}" class="btn btn-outline-primary">
-    💬 Feedback Scores
-  </a>
+<div class="me-card">
+  <div class="me-card-header">
+    <h5><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>Overdue Payments</h5>
+    {% if overdue_payments %}<span class="tag" style="background:var(--danger-bg);color:hsl(0,62%,40%);border:1px solid hsl(0,52%,80%);">{{ overdue_payments | length }} overdue</span>{% endif %}
+  </div>
+  <div class="me-card-body p-0">
+    <div class="me-table-wrap">
+    <table class="me-table">
+      <thead><tr><th>Event</th><th>Client</th><th>Label</th><th>Amount</th><th>Due Date</th><th>Days Overdue</th></tr></thead>
+      <tbody>
+        {% for p in overdue_payments %}
+        <tr>
+          <td><a href="{{ url_for('events.detail', event_id=p.event.id) }}" style="font-weight:700;color:var(--admin-text);text-decoration:none;">{{ p.event.name if p.event else '—' }}</a></td>
+          <td class="text-primary-sm">{{ p.event.client.full_name if p.event and p.event.client else '—' }}</td>
+          <td>{{ p.label }}</td>
+          <td style="font-weight:700;color:var(--danger);">{{ p.amount | peso }}</td>
+          <td class="text-primary-sm">{{ p.due_date | dateformat }}</td>
+          <td><span class="overdue-dot">{{ p.days_overdue }}d</span></td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6"><div class="me-empty"><div class="me-empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="20 6 9 17 4 12"/></svg></div><h6>No overdue payments</h6></div></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </div>
 </div>
-{% endblock %}
-
-{% block scripts %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script>
-const ctx = document.getElementById('monthlyChart').getContext('2d');
-const monthly = {{ monthly | tojson }};
-new Chart(ctx, {
-  data: {
-    labels: monthly.map(m => m.month),
-    datasets: [
-      {
-        type: 'bar',
-        label: 'Events',
-        data: monthly.map(m => m.count),
-        backgroundColor: 'rgba(26,26,46,0.7)',
-        yAxisID: 'y',
-      },
-      {
-        type: 'line',
-        label: 'Revenue (₱)',
-        data: monthly.map(m => m.revenue),
-        borderColor: '#C9A84C',
-        backgroundColor: 'rgba(201,168,76,0.1)',
-        tension: 0.4,
-        yAxisID: 'y1',
-        fill: true,
-      }
-    ]
-  },
-  options: {
-    responsive: true,
-    scales: {
-      y: { beginAtZero: true, position: 'left', title: { display: true, text: 'Events' } },
-      y1: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false },
-             title: { display: true, text: 'Revenue (₱)' } }
-    }
-  }
-});
-</script>
 {% endblock %}

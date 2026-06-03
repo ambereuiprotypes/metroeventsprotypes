@@ -1,58 +1,62 @@
 {% extends "base.html" %}
-{% block title %}Inventory Utilization — Metro Events{% endblock %}
+{% block title %}Inventory Report{% endblock %}
+{% block page_title %}Inventory Report{% endblock %}
+{% block breadcrumb %}<a href="{{ url_for('reports.index') }}" style="color:inherit;">Reports</a> / Inventory{% endblock %}
 {% block content %}
-<div class="d-flex align-items-center gap-2 mb-3">
-  <a href="{{ url_for('reports.index') }}" class="btn btn-sm btn-outline-secondary">← Reports</a>
-  <h2>📦 Inventory Utilization</h2>
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px;">
+  {% for label,val,color in [('Total Items',total_items,'gold'),('Total Value',total_value|peso,'green'),('Low Stock',low_stock_count,'red'),('Out of Stock',out_of_stock,'red')] %}
+  <div class="me-card" style="padding:16px 18px;display:flex;align-items:center;gap:14px;">
+    <div class="kpi-icon {{ color }}">
+      {% if color=='gold' %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+      {% elif color=='green' %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      {% else %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>{% endif %}
+    </div>
+    <div><div class="kpi-value" style="font-size:22px;">{{ val }}</div><div class="kpi-label">{{ label }}</div></div>
+  </div>
+  {% endfor %}
 </div>
 
-<div class="card shadow-sm">
-  <div class="card-body p-0">
-    <table class="table table-hover mb-0">
-      <thead class="table-dark">
-        <tr>
-          <th>Item</th><th>Category</th><th>Total Qty</th>
-          <th>Condition</th><th>Total Reservations</th><th>Status</th>
-        </tr>
-      </thead>
+<div class="me-card mb-4">
+  <div class="me-card-header"><h5><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>Low & Out of Stock Items</h5></div>
+  <div class="me-card-body p-0">
+    <div class="me-table-wrap">
+    <table class="me-table">
+      <thead><tr><th>Item</th><th>Category</th><th>Total Qty</th><th>Available</th><th>Reorder Level</th><th>Est. Value</th><th>Status</th></tr></thead>
       <tbody>
-        {% for row in utilization %}
-        {% set item = row.item %}
+        {% for item in critical_items %}
+        {% set stock_class = 'none' if item.available_qty == 0 else 'low' %}
         <tr>
-          <td>
-            <a href="{{ url_for('inventory.detail', item_id=item.id) }}">
-              {{ item.name }}
-            </a>
-            {% if item.sku %}<br><small class="text-muted">{{ item.sku }}</small>{% endif %}
-          </td>
-          <td><span class="badge bg-secondary">{{ item.category }}</span></td>
+          <td><a href="{{ url_for('inventory.detail', item_id=item.id) }}" style="font-weight:700;color:var(--admin-text);text-decoration:none;">{{ item.name }}</a></td>
+          <td><span class="tag gray">{{ item.category or '—' }}</span></td>
           <td>{{ item.total_qty }}</td>
-          <td>
-            <span class="badge bg-{% if item.condition == 'excellent' %}success{% elif item.condition == 'good' %}info{% elif item.condition == 'fair' %}warning{% else %}danger{% endif %}">
-              {{ item.condition }}
-            </span>
-          </td>
-          <td>
-            <div class="d-flex align-items-center gap-2">
-              <strong>{{ row.total_reservations }}</strong>
-              {% if row.total_reservations == 0 %}
-              <span class="badge bg-danger">Dead Stock</span>
-              {% elif row.total_reservations > 5 %}
-              <span class="badge bg-success">High Demand</span>
-              {% endif %}
-            </div>
-          </td>
-          <td>
-            <div class="progress" style="width:100px;height:8px"
-                 title="{{ row.total_reservations }} reservations">
-              <div class="progress-bar bg-primary"
-                   style="width:{{ [row.total_reservations * 10, 100] | min }}%"></div>
-            </div>
-          </td>
+          <td style="font-weight:700;color:{{ 'var(--danger)' if stock_class=='none' else 'var(--warning)' }};">{{ item.available_qty }}</td>
+          <td>{{ item.reorder_level }}</td>
+          <td>{{ (item.available_qty * (item.unit_cost or 0)) | peso }}</td>
+          <td><span class="stock-badge {{ stock_class }}">{{ 'Out of Stock' if stock_class=='none' else 'Low Stock' }}</span></td>
         </tr>
+        {% else %}
+        <tr><td colspan="7"><div class="me-empty"><h6>All stock levels are healthy</h6></div></td></tr>
         {% endfor %}
       </tbody>
     </table>
+    </div>
+  </div>
+</div>
+
+<div class="me-card">
+  <div class="me-card-header"><h5><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>By Category</h5></div>
+  <div class="me-card-body">
+    {% for cat, data in category_breakdown.items() %}
+    <div style="margin-bottom:16px;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:13px;">
+        <span style="font-weight:700;color:var(--admin-text);">{{ cat | title }}</span>
+        <span style="color:var(--admin-text-2);">{{ data.count }} items · {{ data.total_value | peso }}</span>
+      </div>
+      <div style="height:6px;background:var(--admin-border);border-radius:var(--r-full);overflow:hidden;">
+        <div style="height:100%;width:{{ data.pct }}%;background:var(--brand);border-radius:var(--r-full);transition:width .8s;"></div>
+      </div>
+    </div>
+    {% endfor %}
   </div>
 </div>
 {% endblock %}

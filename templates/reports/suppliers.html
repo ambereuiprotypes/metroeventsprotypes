@@ -1,46 +1,38 @@
 {% extends "base.html" %}
-{% block title %}Supplier Performance — Metro Events{% endblock %}
+{% block title %}Supplier Report{% endblock %}
+{% block page_title %}Supplier Report{% endblock %}
+{% block breadcrumb %}<a href="{{ url_for('reports.index') }}" style="color:inherit;">Reports</a> / Suppliers{% endblock %}
 {% block content %}
-<div class="d-flex align-items-center gap-2 mb-3">
-  <a href="{{ url_for('reports.index') }}" class="btn btn-sm btn-outline-secondary">← Reports</a>
-  <h2>🏭 Supplier Performance</h2>
-</div>
-<div class="card shadow-sm">
-  <div class="card-body p-0">
-    <table class="table table-hover mb-0">
-      <thead class="table-dark">
-        <tr>
-          <th>Supplier</th><th>Category</th><th>On-Time</th><th>Late</th>
-          <th>Issues</th><th>Reliability</th><th>Rating</th>
-        </tr>
-      </thead>
+<div class="me-card mb-4">
+  <div class="me-card-header"><h5><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/></svg>Supplier Performance Overview</h5></div>
+  <div class="me-card-body p-0">
+    <div class="me-table-wrap">
+    <table class="me-table">
+      <thead><tr><th>Supplier</th><th>Category</th><th>Total POs</th><th>Total Spend</th><th>Reliability</th><th>Preferred</th></tr></thead>
       <tbody>
         {% for s in suppliers %}
+        {% set rel = s.reliability_score or 0 %}
         <tr>
+          <td><a href="{{ url_for('suppliers.detail', supplier_id=s.id) }}" style="font-weight:700;color:var(--admin-text);text-decoration:none;">{{ s.company_name }}</a></td>
+          <td><span class="tag gray">{{ s.category or '—' }}</span></td>
+          <td><span class="tag blue">{{ s.purchase_orders|length }}</span></td>
+          <td style="font-weight:700;color:var(--success);">{{ s.total_spend | peso }}</td>
           <td>
-            <a href="{{ url_for('suppliers.detail', supplier_id=s.id) }}">
-              {{ s.company_name }}
-            </a>
-            {% if s.is_preferred %}<span class="badge bg-warning text-dark ms-1">⭐</span>{% endif %}
-          </td>
-          <td>{{ s.category or '—' }}</td>
-          <td class="text-success">{{ s.on_time_count }}</td>
-          <td class="text-danger">{{ s.late_count }}</td>
-          <td class="text-warning">{{ s.issue_count }}</td>
-          <td>
-            <div class="d-flex align-items-center gap-2">
-              <div class="progress flex-grow-1" style="height:10px">
-                <div class="progress-bar bg-{% if s.reliability_pct >= 90 %}success{% elif s.reliability_pct >= 70 %}warning{% else %}danger{% endif %}"
-                     style="width:{{ s.reliability_pct }}%"></div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div style="width:60px;height:5px;background:var(--admin-border);border-radius:var(--r-full);overflow:hidden;">
+                <div style="height:100%;width:{{ rel }}%;background:{{ 'var(--success)' if rel>=80 else ('var(--warning)' if rel>=50 else 'var(--danger)') }};border-radius:var(--r-full);"></div>
               </div>
-              <small>{{ s.reliability_pct }}%</small>
+              <span style="font-size:12px;font-weight:700;color:var(--admin-text);">{{ rel }}%</span>
             </div>
           </td>
-          <td class="text-warning">{{ '★' * (s.rating|int) }}</td>
+          <td>{% if s.is_preferred %}<span class="tag gold">Yes</span>{% else %}<span style="color:var(--admin-text-muted);font-size:12px;">—</span>{% endif %}</td>
         </tr>
+        {% else %}
+        <tr><td colspan="6"><div class="me-empty"><h6>No supplier data yet</h6></div></td></tr>
         {% endfor %}
       </tbody>
     </table>
+    </div>
   </div>
 </div>
 {% endblock %}
