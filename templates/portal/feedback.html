@@ -1,89 +1,121 @@
-{% extends "base.html" %}
-{% block title %}Feedback — {{ event.name }}{% endblock %}
+{% extends "base_client.html" %}
+{% block title %}Leave a Review — {{ event.name }}{% endblock %}
+
 {% block content %}
-<div class="d-flex align-items-center gap-2 mb-3">
+
+<div style="max-width:580px;margin:0 auto;">
+
   <a href="{{ url_for('portal.event_overview', event_id=event.id) }}"
-     class="btn btn-sm btn-outline-secondary">← Back</a>
-  <h2>⭐ Rate Your Experience</h2>
-</div>
-<p class="text-muted">{{ event.name }} · {{ event.event_date | dateformat }}</p>
+     style="display:inline-flex;align-items:center;gap:6px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--client-text-muted);text-decoration:none;margin-bottom:24px;transition:color .18s;"
+     onmouseover="this.style.color='var(--client-text)'"
+     onmouseout="this.style.color='var(--client-text-muted)'">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+    Back to {{ event.name }}
+  </a>
 
-<div class="card shadow-sm" style="max-width:600px">
-  <div class="card-body">
-    <form method="POST">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="client-form-card">
 
-      {% set aspects = [
-        ('rating_overall', 'Overall Experience 🌟'),
-        ('rating_design', 'Design & Styling 🎨'),
-        ('rating_coordination', 'Coordination 📋'),
-        ('rating_on_time', 'On-Time Setup ⏰'),
-        ('rating_crew', 'Crew Professionalism 👥'),
-        ('rating_value', 'Value for Money 💰'),
-      ] %}
+    {# Header #}
+    <div style="text-align:center;margin-bottom:28px;">
+      <div style="width:56px;height:56px;background:var(--brand-light);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--brand-dark)" stroke-width="2">
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+        </svg>
+      </div>
+      <h2 class="client-form-title" style="font-size:26px;margin-bottom:6px;">How was your event?</h2>
+      <p class="client-form-subtitle">
+        Your honest feedback on
+        <strong style="color:var(--client-text);">{{ event.name }}</strong>
+        helps us improve for every future celebration.
+      </p>
+    </div>
 
-      {% for field, label in aspects %}
-      <div class="mb-3">
-        <label class="form-label fw-bold">{{ label }}</label>
-        <div class="d-flex gap-2">
-          {% for i in range(1, 6) %}
-          <div class="form-check form-check-inline">
-            <input class="form-check-input" type="radio" name="{{ field }}"
-                   id="{{ field }}_{{ i }}" value="{{ i }}"
-                   {% if ae and ae[field] == i %}checked{% endif %} required>
-            <label class="form-check-label fs-5" for="{{ field }}_{{ i }}">
-              ★ {{ i }}
-            </label>
-          </div>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for cat, msg in messages %}
+        <div class="me-alert me-alert-{{ 'danger' if cat in ['error','danger'] else cat }}"
+             style="margin-bottom:16px;font-family:'DM Sans',sans-serif;">
+          <span>{{ msg }}</span>
+        </div>
+      {% endfor %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('portal.feedback', event_id=event.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+
+      {# Star rating #}
+      <div style="margin-bottom:24px;text-align:center;">
+        <label class="client-label" style="display:block;margin-bottom:12px;font-size:14px;">
+          Overall Rating <span style="color:var(--danger)">*</span>
+        </label>
+        <div class="star-field" style="justify-content:center;" id="starField">
+          {% for val in [5, 4, 3, 2, 1] %}
+          <input type="radio" id="star{{ val }}" name="rating" value="{{ val }}" required />
+          <label for="star{{ val }}" style="font-size:40px;" title="{{ val }} star{{ 's' if val > 1 }}">&#9733;</label>
           {% endfor %}
         </div>
-      </div>
-      {% endfor %}
-
-      <div class="mb-3">
-        <label class="form-label fw-bold">Your Testimonial 💬</label>
-        <textarea name="client_feedback" class="form-control" rows="4"
-                  placeholder="Ibahagi ang inyong karanasan…">{{ ae.client_feedback if ae else '' }}</textarea>
+        <div id="ratingLabel" style="font-family:'DM Sans',sans-serif;font-size:13px;color:var(--client-text-muted);margin-top:8px;min-height:18px;"></div>
       </div>
 
-      <div class="mb-3">
-        <div class="form-check">
-          <input type="checkbox" class="form-check-input" name="would_recommend"
-                 value="1" id="chkRecommend"
-                 {% if ae and ae.would_recommend %}checked{% endif %}>
-          <label class="form-check-label" for="chkRecommend">
-            I would recommend Metro Events to others ❤️
-          </label>
+      {# Aspects #}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px;">
+        {% for field, label in [
+          ('coordination_rating', 'Coordination'),
+          ('design_rating',       'Design & Decor'),
+          ('communication_rating','Communication'),
+          ('value_rating',        'Value for Money'),
+        ] %}
+        <div>
+          <label class="client-label">{{ label }}</label>
+          <select name="{{ field }}" class="client-select">
+            <option value="">Rate this…</option>
+            {% for n in [5, 4, 3, 2, 1] %}
+            <option value="{{ n }}">{{ n }} star{{ 's' if n > 1 }}</option>
+            {% endfor %}
+          </select>
         </div>
-        <div class="form-check">
-          <input type="checkbox" class="form-check-input" name="allow_testimonial"
-                 value="1" id="chkTestimonial"
-                 {% if ae and ae.allow_testimonial %}checked{% endif %}>
-          <label class="form-check-label" for="chkTestimonial">
-            Allow Metro Events to feature my feedback 📣
-          </label>
-        </div>
+        {% endfor %}
       </div>
 
-      <div class="mb-3">
-        <label class="form-label fw-bold">Interested in booking another event?</label>
-        <div class="form-check">
-          <input type="checkbox" class="form-check-input" name="next_booking_interest"
-                 value="1" id="chkNext"
-                 {% if ae and ae.next_booking_interest %}checked{% endif %}>
-          <label class="form-check-label" for="chkNext">
-            Yes, I'm interested! 🎉
-          </label>
-        </div>
-        <input type="text" name="next_event_type" class="form-control form-control-sm mt-2"
-               placeholder="What type? (Wedding, Birthday, Corporate…)"
-               value="{{ ae.next_event_type if ae else '' }}">
+      {# Comment #}
+      <div style="margin-bottom:20px;">
+        <label class="client-label" for="comment">
+          Tell us about your experience <span style="color:var(--danger)">*</span>
+        </label>
+        <textarea id="comment" name="comment" class="client-textarea"
+                  rows="5" required
+                  placeholder="What made your event special? Is there anything we could have done better?"
+                  data-maxlength="1000"></textarea>
       </div>
 
-      <button type="submit" class="btn btn-primary btn-lg w-100">
-        Submit Feedback 💛
+      {# Would recommend #}
+      <div style="margin-bottom:24px;padding:14px 16px;background:var(--client-overlay);border:1px solid var(--client-border);border-radius:var(--r-md);">
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--client-text);">
+          <input type="checkbox" name="would_recommend" value="1" checked
+                 style="width:18px;height:18px;accent-color:var(--brand);cursor:pointer;" />
+          I would recommend {{ APP_NAME }} to family and friends.
+        </label>
+      </div>
+
+      <button type="submit" class="btn-client btn-client-gold"
+              style="width:100%;justify-content:center;padding:14px;font-size:15px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+        </svg>
+        Submit Review
       </button>
     </form>
   </div>
 </div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+const labels = {5:'Excellent!', 4:'Very Good', 3:'Good', 2:'Fair', 1:'Needs Improvement'};
+document.querySelectorAll('#starField input').forEach(inp => {
+  inp.addEventListener('change', () => {
+    document.getElementById('ratingLabel').textContent = labels[inp.value] || '';
+  });
+});
+</script>
 {% endblock %}
