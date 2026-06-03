@@ -1,73 +1,65 @@
 {% extends "base.html" %}
-{% block title %}Team & Users{% endblock %}
-{% block page_title %}Team & Users{% endblock %}
-{% block breadcrumb %}Admin → Users{% endblock %}
+{% block title %}Team Members{% endblock %}
+{% block page_title %}Team Members{% endblock %}
+{% block breadcrumb %}User management{% endblock %}
 {% block topbar_actions %}
-  <a href="{{ url_for('auth.register') }}" class="btn-gold">➕ Add User</a>
+<a href="{{ url_for('auth.register') }}" class="btn-me btn-gold">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add Member
+</a>
 {% endblock %}
-
 {% block content %}
 <div class="me-card">
   <div class="me-card-body p-0">
-    <div class="table-responsive">
-      <table class="me-table mb-0">
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Email</th>
-            <th>Role</th>
-            <th>Phone</th>
-            <th>Last Login</th>
-            <th>Status</th>
-            <!-- Added Actions Column -->
-            <th class="text-end">Update Role</th> 
-          </tr>
-        </thead>
-        <tbody>
-          {% for u in users %}
-          <tr>
-            <td>
-              <div class="d-flex align-items-center gap-2">
-                <div class="me-avatar" style="width:30px;height:30px;font-size:.75rem;">{{ u.name[0]|upper }}</div>
-                <strong>{{ u.name }}</strong>
+    <div class="me-table-wrap">
+    <table class="me-table">
+      <thead><tr><th>Member</th><th>Role</th><th>Status</th><th>Joined</th><th></th></tr></thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td>
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div class="me-avatar" style="width:36px;height:36px;font-size:13px;flex-shrink:0;">{{ u.name[0]|upper }}</div>
+              <div>
+                <div style="font-weight:700;font-size:13.5px;color:var(--admin-text);">{{ u.name }}</div>
+                <div class="event-sub">{{ u.email }}</div>
               </div>
-            </td>
-            <td>{{ u.email }}</td>
-            <td>
-              <span class="badge {{ 'bg-primary' if u.role == 'admin' else ('bg-info text-dark' if u.role == 'coordinator' else 'bg-secondary') }}">
-                {{ u.role|title }}
-              </span>
-            </td>
-            <td>{{ u.phone or '—' }}</td>
-            <td class="text-muted-sm">{{ u.last_login|dateformat if u.last_login else 'Never' }}</td>
-            <td>
-              {% if u.is_active %}
-                <span class="badge bg-success">Active</span>
-              {% else %}
-                <span class="badge bg-danger">Inactive</span>
-              {% endif %}
-            </td>
-            
-            <!-- 🚨 The Promotion Form -->
-            <td class="text-end">
-              <form action="{{ url_for('auth.promote_user', user_id=u.id) }}" method="POST" class="d-flex align-items-center justify-content-end gap-2 m-0">
+            </div>
+          </td>
+          <td>
+            {% if u.role == 'admin' %}<span class="tag gold">Admin</span>
+            {% elif u.role == 'coordinator' %}<span class="tag blue">Coordinator</span>
+            {% else %}<span class="tag gray">{{ u.role | title }}</span>{% endif %}
+          </td>
+          <td>
+            {% if u.is_approved %}
+              <span class="status-badge event_day">Active</span>
+            {% else %}
+              <span class="status-badge planning">Pending</span>
+            {% endif %}
+          </td>
+          <td class="text-primary-sm">{{ u.created_at | dateformat if u.created_at else '—' }}</td>
+          <td>
+            <div class="me-table-actions">
+              {% if not u.is_approved %}
+              <form method="POST" action="{{ url_for('admin.approve_user', user_id=u.id) }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-                
-                <select name="role" class="form-select form-select-sm" style="width: 125px;">
-                  <option value="client" {% if u.role == 'client' %}selected{% endif %}>Client</option>
-                  <option value="warehouse" {% if u.role == 'warehouse' %}selected{% endif %}>Warehouse</option>
-                  <option value="coordinator" {% if u.role == 'coordinator' %}selected{% endif %}>Coordinator</option>
-                  <option value="admin" {% if u.role == 'admin' %}selected{% endif %}>Admin</option>
-                </select>
-                
-                <button type="submit" class="btn btn-sm btn-outline-secondary">Update</button>
+                <button type="submit" class="btn-me btn-gold btn-sm-me">Approve</button>
               </form>
-            </td>
-            
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+              {% endif %}
+              {% if u.id != current_user.id %}
+              <form method="POST" action="{{ url_for('auth.delete_user', user_id=u.id) }}" onsubmit="return confirm('Remove {{ u.name }} from the team?')">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                <button type="submit" class="btn-icon danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
+              </form>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5"><div class="me-empty"><h6>No team members yet</h6></div></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
     </div>
   </div>
 </div>
