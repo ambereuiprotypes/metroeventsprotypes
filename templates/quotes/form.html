@@ -1,150 +1,144 @@
 {% extends "base.html" %}
-{% block title %}New Quote{% endblock %}
-{% block page_title %}Create Quote{% endblock %}
-{% block breadcrumb %}
-  <a href="{{ url_for('events.detail', event_id=event.id) }}">{{ event.name }}</a> → Quote
+{% block title %}{{ 'Edit Quote' if quote else 'Create Quote' }}{% endblock %}
+{% block page_title %}{{ 'Edit Quote' if quote else 'New Quote' }}{% endblock %}
+{% block breadcrumb %}<a href="{{ url_for('events.detail', event_id=event.id, tab='quote') }}" style="color:inherit;">{{ event.name }}</a> / Quote{% endblock %}
+{% block topbar_actions %}
+<a href="{{ url_for('events.detail', event_id=event.id, tab='quote') }}" class="btn-me btn-outline-me"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>Back</a>
 {% endblock %}
-
 {% block content %}
-<div class="me-card">
-  <div class="me-card-header">
-    <h5>💰 New Quote — {{ event.name }}</h5>
+<form method="POST" action="{{ url_for('quotes.edit_quote', quote_id=quote.id) if quote else url_for('quotes.new_quote', event_id=event.id) }}" id="quoteForm">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+<div class="row g-4">
+  <div class="col-lg-8">
+    <div class="me-card mb-4">
+      <div class="me-card-header">
+        <h5><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Quote Details</h5>
+      </div>
+      <div class="me-card-body">
+        <div class="form-row cols-2">
+          <div class="me-form-group">
+            <label class="me-label">Package Name</label>
+            <input type="text" name="package_name" class="me-input" value="{{ quote.package_name if quote else '' }}" placeholder="e.g. Platinum Full Package" />
+          </div>
+          <div class="me-form-group">
+            <label class="me-label">Status</label>
+            <select name="status" class="me-select">
+              {% for s in ['draft','sent','approved','rejected'] %}<option value="{{ s }}" {{ 'selected' if quote and quote.status == s }}>{{ s | title }}</option>{% endfor %}
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="me-card mb-4">
+      <div class="me-card-header">
+        <h5><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/></svg>Line Items</h5>
+        <button type="button" class="btn-me btn-gold btn-sm-me" onclick="addRow()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add Row
+        </button>
+      </div>
+      <div class="me-card-body p-0">
+        <div class="me-table-wrap">
+        <table class="me-table" id="itemsTable">
+          <thead><tr><th>Category</th><th>Description</th><th>Qty</th><th>Unit</th><th>Unit Price</th><th style="text-align:right;">Total</th><th></th></tr></thead>
+          <tbody id="itemsBody">
+            {% set items = quote.items if quote else [] %}
+            {% for item in items %}
+            <tr>
+              <td><input type="text" name="category[]" class="me-input" value="{{ item.category }}" style="font-size:12px;padding:7px 10px;" placeholder="Catering" /></td>
+              <td><input type="text" name="item_name[]" class="me-input" value="{{ item.item_name }}" required style="font-size:12px;padding:7px 10px;" placeholder="Description" /></td>
+              <td><input type="number" name="qty[]" class="me-input qty-input" value="{{ item.qty }}" min="1" style="font-size:12px;padding:7px 10px;width:70px;" oninput="calcRow(this)" /></td>
+              <td><input type="text" name="unit[]" class="me-input" value="{{ item.unit }}" style="font-size:12px;padding:7px 10px;width:70px;" placeholder="pcs" /></td>
+              <td><input type="number" name="unit_price[]" class="me-input price-input" value="{{ item.unit_price }}" step="0.01" min="0" style="font-size:12px;padding:7px 10px;width:110px;" oninput="calcRow(this)" /></td>
+              <td style="text-align:right;"><strong class="row-total" style="font-size:13px;white-space:nowrap;">{{ item.total_price | peso }}</strong><input type="hidden" name="total_price[]" class="total-hidden" value="{{ item.total_price }}" /></td>
+              <td><button type="button" class="btn-icon danger" onclick="this.closest('tr').remove();calcTotals()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></td>
+            </tr>
+            {% else %}
+            <tr id="emptyRow"><td colspan="7" style="padding:20px;text-align:center;color:var(--admin-text-muted);font-size:13px;">Click "Add Row" to start building your quote.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        </div>
+      </div>
+    </div>
   </div>
-  <div class="me-card-body">
-    <form method="POST">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
 
-      <div class="row g-3 mb-4">
-        <div class="col-md-4">
-          <label class="me-form-label">Package Name</label>
-          <input type="text" name="package_name" class="me-form-control" placeholder="e.g. Metro Gold Package" />
-        </div>
-        <div class="col-md-4">
-          <label class="me-form-label">Quote Label</label>
-          <input type="text" name="label" class="me-form-control" placeholder="e.g. v1 - Initial Proposal" />
-        </div>
-        <div class="col-md-4">
-          <label class="me-form-label">Package Description</label>
-          <input type="text" name="package_description" class="me-form-control" />
-        </div>
-      </div>
-
-      <!-- Line Items -->
-      <div class="section-title mb-2">Line Items</div>
-      <div class="me-card mb-3" style="border:1px solid #E8ECF3;">
-        <div class="me-card-body p-0">
-          <div class="table-responsive">
-            <table class="me-table">
-              <thead>
-                <tr>
-                  <th style="width:120px">Category</th>
-                  <th>Item Name</th>
-                  <th style="width:70px">Qty</th>
-                  <th style="width:70px">Unit</th>
-                  <th style="width:130px">Unit Price</th>
-                  <th style="width:130px" class="text-end">Total</th>
-                  <th style="width:50px" title="Add-on?">+</th>
-                  <th style="width:40px"></th>
-                </tr>
-              </thead>
-              <tbody id="quoteItemsBody">
-                <tr>
-                  <td><input class="me-form-control" name="item_category[]" placeholder="Category" /></td>
-                  <td><input class="me-form-control" name="item_name[]" placeholder="Item name" required /></td>
-                  <td><input class="me-form-control item-qty" name="item_qty[]" type="number" value="1" min="0.01" step="0.01" style="width:70px" /></td>
-                  <td>
-                    <select class="me-form-control" name="item_unit[]" style="width:70px">
-                      <option>pc</option><option>set</option><option>lot</option><option>hr</option><option>day</option>
-                    </select>
-                  </td>
-                  <td><input class="me-form-control item-price" name="item_price[]" type="number" value="0" min="0" step="0.01" /></td>
-                  <td class="item-total text-end" style="font-weight:700">₱0.00</td>
-                  <td><input type="checkbox" name="item_addon[]" value="0" title="Is add-on?" /></td>
-                  <td><button type="button" class="btn btn-sm btn-outline-danger remove-row">✕</button></td>
-                </tr>
-              </tbody>
-            </table>
+  <div class="col-lg-4">
+    <div class="me-card mb-4" style="position:sticky;top:calc(var(--topbar-h) + 16px);">
+      <div class="me-card-header"><h5><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>Totals</h5></div>
+      <div class="me-card-body">
+        <div class="quote-totals" id="totalsBox">
+          <div class="quote-total-row"><span>Subtotal</span><span id="subtotalVal">₱0.00</span></div>
+          <div class="me-form-group" style="margin:12px 0 8px;">
+            <label class="me-label" style="font-size:10px;">Discount (₱)</label>
+            <input type="number" name="discount_amount" id="discountInput" class="me-input" value="{{ quote.discount_amount if quote else 0 }}" min="0" step="0.01" oninput="calcTotals()" style="font-size:13px;padding:7px 10px;" />
           </div>
-          <div class="p-3">
-            <button type="button" id="addQuoteItem" class="btn-outline-gold" style="font-size:.82rem;padding:6px 14px;">
-              ➕ Add Line Item
-            </button>
+          <div class="me-form-group" style="margin-bottom:12px;">
+            <label class="me-label" style="font-size:10px;">Tax (%)</label>
+            <input type="number" name="tax_percent" id="taxInput" class="me-input" value="{{ quote.tax_percent if quote else 0 }}" min="0" max="100" step="0.01" oninput="calcTotals()" style="font-size:13px;padding:7px 10px;" />
           </div>
+          <div class="quote-total-row"><span>Discount</span><span id="discountVal" style="color:var(--success);">-₱0.00</span></div>
+          <div class="quote-total-row"><span>Tax</span><span id="taxVal">₱0.00</span></div>
+          <div class="quote-total-row grand"><span>Grand Total</span><span id="grandVal">₱0.00</span></div>
+          <input type="hidden" name="subtotal" id="subtotalHidden" value="0" />
+          <input type="hidden" name="tax_amount" id="taxAmountHidden" value="0" />
+          <input type="hidden" name="grand_total" id="grandHidden" value="0" />
         </div>
+        <div class="me-form-group" style="margin-top:16px;">
+          <label class="me-label">Internal Notes</label>
+          <textarea name="notes" class="me-textarea" rows="3" placeholder="Terms, special conditions…">{{ quote.notes if quote else '' }}</textarea>
+        </div>
+        <button type="submit" class="btn-me btn-gold" style="width:100%;justify-content:center;margin-top:4px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg>
+          {{ 'Save Changes' if quote else 'Save Quote' }}
+        </button>
       </div>
-
-      <!-- Discount, Tax, Totals -->
-      <div class="row g-3 mb-4">
-        <div class="col-md-3">
-          <label class="me-form-label">Discount Type</label>
-          <select id="discountType" name="discount_type" class="me-form-control">
-            <option value="none">None</option>
-            <option value="percent">Percentage (%)</option>
-            <option value="fixed">Fixed Amount (₱)</option>
-          </select>
-        </div>
-        <div class="col-md-2">
-          <label class="me-form-label">Discount Value</label>
-          <input type="number" id="discountValue" name="discount_value" class="me-form-control" value="0" min="0" step="0.01" />
-        </div>
-        <div class="col-md-3">
-          <label class="me-form-label">Discount Reason</label>
-          <input type="text" name="discount_reason" class="me-form-control" placeholder="e.g. Referral discount" />
-        </div>
-        <div class="col-md-2">
-          <label class="me-form-label">Tax (%)</label>
-          <input type="number" id="taxPercent" name="tax_percent" class="me-form-control" value="0" min="0" step="0.01" />
-        </div>
-        <div class="col-md-2 d-flex align-items-end">
-          <div style="background:#F9F6EF;border-radius:8px;padding:10px 14px;width:100%;">
-            <div class="text-muted-sm">Subtotal: <span id="calcSubtotal">₱0.00</span></div>
-            <div class="text-muted-sm">Discount: <span id="calcDiscount">₱0.00</span></div>
-            <div class="text-muted-sm">Tax: <span id="calcTax">₱0.00</span></div>
-            <div style="font-weight:800;font-size:1rem;color:#C9A84C;">TOTAL: <span id="calcGrandTotal">₱0.00</span></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Payment Schedule -->
-      <div class="row g-3 mb-4">
-        <div class="col-md-3">
-          <label class="me-form-label">Downpayment Amount</label>
-          <input type="number" name="downpayment_amount" class="me-form-control" value="0" min="0" step="0.01" />
-        </div>
-        <div class="col-md-3">
-          <label class="me-form-label">Downpayment Due</label>
-          <input type="date" name="downpayment_due" class="me-form-control" />
-        </div>
-        <div class="col-md-3">
-          <label class="me-form-label">Balance Due Date</label>
-          <input type="date" name="balance_due_date" class="me-form-control" />
-        </div>
-      </div>
-
-      <!-- Notes -->
-      <div class="row g-3 mb-4">
-        <div class="col-md-4">
-          <label class="me-form-label">Inclusions Note</label>
-          <textarea name="inclusions_note" class="me-form-control" rows="4"
-                    placeholder="What's included in the package…"></textarea>
-        </div>
-        <div class="col-md-4">
-          <label class="me-form-label">Exclusions Note</label>
-          <textarea name="exclusions_note" class="me-form-control" rows="4"
-                    placeholder="What's NOT included…"></textarea>
-        </div>
-        <div class="col-md-4">
-          <label class="me-form-label">Terms & Conditions</label>
-          <textarea name="terms_note" class="me-form-control" rows="4"
-                    placeholder="Payment terms, cancellation policy…"></textarea>
-        </div>
-      </div>
-
-      <div class="d-flex gap-2">
-        <button type="submit" class="btn-gold">💾 Save Quote</button>
-        <a href="{{ url_for('events.detail', event_id=event.id, tab='quote') }}" class="btn btn-outline-secondary">Cancel</a>
-      </div>
-    </form>
+    </div>
   </div>
 </div>
+</form>
+{% endblock %}
+{% block scripts %}
+<script>
+const ROW_TMPL = `<tr>
+  <td><input type="text" name="category[]" class="me-input" style="font-size:12px;padding:7px 10px;" placeholder="Category" /></td>
+  <td><input type="text" name="item_name[]" class="me-input" required style="font-size:12px;padding:7px 10px;" placeholder="Description" /></td>
+  <td><input type="number" name="qty[]" class="me-input qty-input" value="1" min="1" style="font-size:12px;padding:7px 10px;width:70px;" oninput="calcRow(this)" /></td>
+  <td><input type="text" name="unit[]" class="me-input" style="font-size:12px;padding:7px 10px;width:70px;" placeholder="pcs" /></td>
+  <td><input type="number" name="unit_price[]" class="me-input price-input" value="0" step="0.01" min="0" style="font-size:12px;padding:7px 10px;width:110px;" oninput="calcRow(this)" /></td>
+  <td style="text-align:right;"><strong class="row-total" style="font-size:13px;">₱0.00</strong><input type="hidden" name="total_price[]" class="total-hidden" value="0" /></td>
+  <td><button type="button" class="btn-icon danger" onclick="this.closest('tr').remove();calcTotals()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></td>
+</tr>`;
+function addRow() {
+  const empty = document.getElementById('emptyRow');
+  if (empty) empty.remove();
+  document.getElementById('itemsBody').insertAdjacentHTML('beforeend', ROW_TMPL);
+}
+function fmt(n) { return '₱' + parseFloat(n).toLocaleString('en-PH', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+function calcRow(inp) {
+  const tr    = inp.closest('tr');
+  const qty   = parseFloat(tr.querySelector('.qty-input').value)   || 0;
+  const price = parseFloat(tr.querySelector('.price-input').value) || 0;
+  const total = qty * price;
+  tr.querySelector('.row-total').textContent   = fmt(total);
+  tr.querySelector('.total-hidden').value      = total.toFixed(2);
+  calcTotals();
+}
+function calcTotals() {
+  let sub = 0;
+  document.querySelectorAll('.total-hidden').forEach(h => sub += parseFloat(h.value) || 0);
+  const disc  = parseFloat(document.getElementById('discountInput').value) || 0;
+  const taxPc = parseFloat(document.getElementById('taxInput').value)      || 0;
+  const tax   = (sub - disc) * taxPc / 100;
+  const grand = sub - disc + tax;
+  document.getElementById('subtotalVal').textContent = fmt(sub);
+  document.getElementById('discountVal').textContent = '-' + fmt(disc);
+  document.getElementById('taxVal').textContent      = fmt(tax);
+  document.getElementById('grandVal').textContent    = fmt(grand);
+  document.getElementById('subtotalHidden').value    = sub.toFixed(2);
+  document.getElementById('taxAmountHidden').value   = tax.toFixed(2);
+  document.getElementById('grandHidden').value       = grand.toFixed(2);
+}
+document.addEventListener('DOMContentLoaded', calcTotals);
+</script>
 {% endblock %}
