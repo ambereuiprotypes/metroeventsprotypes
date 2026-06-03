@@ -1,60 +1,136 @@
 {% extends "base.html" %}
-{% block title %}Manage Reviews — Admin{% endblock %}
-
+{% block title %}Client Reviews{% endblock %}
+{% block page_title %}Client Reviews{% endblock %}
+{% block breadcrumb %}Post-event feedback and ratings{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="fw-bold mb-0">🌟 Client Reviews</h2>
-    <span class="badge bg-gold text-dark px-3 py-2">Total: {{ reviews|length }}</span>
+
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px;">
+  {% for label, val, color in [
+    ('Total Reviews', total_reviews, 'gold'),
+    ('Average Rating', avg_rating | round(1), 'green'),
+    ('5-Star Reviews', five_star, 'blue'),
+  ] %}
+  <div class="me-card" style="padding:16px 18px;display:flex;align-items:center;gap:14px;">
+    <div class="kpi-icon {{ color }}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+      </svg>
+    </div>
+    <div>
+      <div class="kpi-value" style="font-size:26px;">{{ val }}</div>
+      <div class="kpi-label">{{ label }}</div>
+    </div>
+  </div>
+  {% endfor %}
 </div>
 
-<div class="me-card shadow-sm border-0 p-0 overflow-hidden">
-    <table class="me-table mb-0">
-        <thead>
-            <tr>
-                <th>Date</th>
-                <th>Client</th>
-                <th>Rating</th>
-                <th>Comment</th>
-                <th class="text-center">Featured</th>
-                <th class="text-end">Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for rev in reviews %}
-            <tr>
-                <td class="text-muted small">{{ rev.created_at.strftime('%m/%d/%y') }}</td>
-                <td class="fw-bold">{{ rev.client.full_name }}</td>
-                <td class="text-gold">
-                    {% for i in range(rev.rating) %}★{% endfor %}
-                </td>
-                <td style="max-width: 300px;">
-                    <p class="mb-0 small text-truncate" title="{{ rev.comment }}">"{{ rev.comment }}"</p>
-                </td>
-                <td class="text-center">
-                    <form action="{{ url_for('dashboard.toggle_review_feature', review_id=rev.id) }}" method="POST">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-                        <button type="submit" class="btn btn-sm {{ 'btn-gold' if rev.is_featured else 'btn-outline-secondary' }}">
-                            {{ '★ Featured' if rev.is_featured else '☆ Feature' }}
-                        </button>
-                    </form>
-                </td>
-                <td class="text-end">
-                    {% if current_user.role == 'admin' %}
-                    <form action="{{ url_for('dashboard.delete_review', review_id=rev.id) }}" method="POST" class="d-inline">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-                        <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this review?')">
-                            🗑️
-                        </button>
-                    </form>
-                    {% endif %}
-                </td>
-            </tr>
-            {% else %}
-            <tr>
-                <td colspan="6" class="text-center py-5 text-muted">No reviews submitted yet.</td>
-            </tr>
+{# Rating breakdown #}
+<div class="row g-4 mb-4">
+  <div class="col-lg-4">
+    <div class="me-card h-100">
+      <div class="me-card-header">
+        <h6><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Rating Breakdown</h6>
+      </div>
+      <div class="me-card-body">
+        {% for stars in [5, 4, 3, 2, 1] %}
+        {% set count = rating_breakdown.get(stars, 0) %}
+        {% set pct   = ((count / total_reviews * 100) | int) if total_reviews else 0 %}
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+          <div style="display:flex;gap:2px;flex-shrink:0;">
+            {% for i in range(5) %}
+            <span style="font-size:12px;color:{{ 'var(--brand)' if i < stars else 'var(--admin-border)' }};">&#9733;</span>
             {% endfor %}
-        </tbody>
+          </div>
+          <div style="flex:1;height:6px;background:var(--admin-border);border-radius:var(--r-full);overflow:hidden;">
+            <div style="height:100%;width:{{ pct }}%;background:var(--brand);border-radius:var(--r-full);transition:width .8s;"></div>
+          </div>
+          <span style="font-size:12px;font-weight:700;color:var(--admin-text);min-width:24px;text-align:right;">{{ count }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-8">
+    <div class="me-card h-100">
+      <div class="me-card-header">
+        <h6><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Recent Reviews</h6>
+      </div>
+      <div class="me-card-body p-0">
+        {% for r in reviews[:5] %}
+        <div style="padding:16px 20px;border-bottom:1px solid var(--admin-border);">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:8px;flex-wrap:wrap;">
+            <div>
+              <div style="font-size:14px;font-weight:700;color:var(--admin-text);margin-bottom:2px;">
+                {{ r.event.name if r.event else '—' }}
+              </div>
+              <div class="event-sub">{{ r.event.client.full_name if r.event and r.event.client else '—' }}</div>
+            </div>
+            <div style="display:flex;gap:2px;flex-shrink:0;">
+              {% for i in range(5) %}
+              <span style="font-size:16px;color:{{ 'var(--brand)' if i < r.rating else 'var(--admin-border)' }};">&#9733;</span>
+              {% endfor %}
+            </div>
+          </div>
+          {% if r.comment %}
+          <p style="font-size:13.5px;color:var(--admin-text-2);line-height:1.65;margin:0 0 6px;font-style:italic;">"{{ r.comment }}"</p>
+          {% endif %}
+          <div class="text-muted-sm">{{ r.created_at | dateformat }}</div>
+        </div>
+        {% else %}
+        <div class="me-empty"><h6>No reviews yet</h6></div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+{# All reviews table #}
+<div class="me-card">
+  <div class="me-card-header">
+    <h5><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>All Reviews</h5>
+    <span class="tag gray">{{ reviews | length }}</span>
+  </div>
+  <div class="me-card-body p-0">
+    <div class="me-table-wrap">
+    <table class="me-table">
+      <thead>
+        <tr><th>Event</th><th>Client</th><th>Rating</th><th>Comment</th><th>Date</th></tr>
+      </thead>
+      <tbody>
+        {% for r in reviews %}
+        <tr>
+          <td data-label="Event">
+            <div class="event-name">{{ r.event.name if r.event else '—' }}</div>
+          </td>
+          <td data-label="Client" class="text-primary-sm">
+            {{ r.event.client.full_name if r.event and r.event.client else '—' }}
+          </td>
+          <td data-label="Rating">
+            <div style="display:flex;gap:2px;">
+              {% for i in range(5) %}
+              <span style="font-size:14px;color:{{ 'var(--brand)' if i < r.rating else 'var(--admin-border)' }};">&#9733;</span>
+              {% endfor %}
+            </div>
+          </td>
+          <td data-label="Comment" style="max-width:260px;">
+            {% if r.comment %}
+            <span style="font-size:13px;color:var(--admin-text-2);font-style:italic;">
+              "{{ r.comment | truncate(80) }}"
+            </span>
+            {% else %}
+            <span style="color:var(--admin-text-muted);font-size:12px;">No comment</span>
+            {% endif %}
+          </td>
+          <td data-label="Date" class="text-primary-sm">{{ r.created_at | dateformat }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5">
+          <div class="me-empty"><h6>No reviews yet</h6></div>
+        </td></tr>
+        {% endfor %}
+      </tbody>
     </table>
+    </div>
+  </div>
 </div>
 {% endblock %}
