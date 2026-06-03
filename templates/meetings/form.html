@@ -1,145 +1,81 @@
 {% extends "base.html" %}
-{% block title %}{% if meeting %}Edit Meeting{% else %}Schedule Meeting{% endif %} — {{ APP_NAME }}{% endblock %}
-
+{% block title %}{{ 'Edit' if meeting else 'New' }} Meeting{% endblock %}
+{% block page_title %}{{ 'Edit Meeting' if meeting else 'Schedule Meeting' }}{% endblock %}
+{% block breadcrumb %}<a href="{{ url_for('meetings.index') }}" style="color:inherit;">Meetings</a> / {{ 'Edit' if meeting else 'New' }}{% endblock %}
+{% block topbar_actions %}
+<a href="{{ url_for('meetings.index') }}" class="btn-me btn-outline-me"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>Back</a>
+{% endblock %}
 {% block content %}
-<div class="page-header mb-4">
-  <nav aria-label="breadcrumb">
-    <ol class="breadcrumb mb-1">
-      <li class="breadcrumb-item"><a href="{{ url_for('meetings.index') }}">Meeting Schedules</a></li>
-      <li class="breadcrumb-item active">
-        {% if meeting %}Edit — {{ meeting.client_name }}{% else %}New Meeting{% endif %}
-      </li>
-    </ol>
-  </nav>
-  <h2 class="mb-0">
-    <i class="bi bi-calendar2-plus me-2 text-primary"></i>
-    {% if meeting %}Edit Meeting{% else %}Schedule a Meeting{% endif %}
-  </h2>
-</div>
-
-<div class="row justify-content-center">
-  <div class="col-12 col-lg-8">
-    <div class="card border-0 shadow-sm">
-      <div class="card-body p-4">
-        <form method="POST"
-              action="{% if meeting %}{{ url_for('meetings.edit', meeting_id=meeting.id) }}{% else %}{{ url_for('meetings.new') }}{% endif %}">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-
-          {# ── Client Info ──────────────────────────────────────── #}
-          <h6 class="text-uppercase text-muted small fw-bold mb-3 border-bottom pb-2">
-            <i class="bi bi-person me-1"></i>Client Information
-          </h6>
-          <div class="row g-3 mb-4">
-            <div class="col-12 col-md-7">
-              <label class="form-label">Client Name <span class="text-danger">*</span></label>
-              <input type="text" name="client_name" class="form-control"
-                     value="{{ meeting.client_name if meeting else '' }}"
-                     placeholder="e.g. Juan dela Cruz" required>
-            </div>
-            <div class="col-12 col-md-5">
-              <label class="form-label">Contact No.</label>
-              <input type="text" name="contact_no" class="form-control"
-                     value="{{ meeting.contact_no if meeting else '' }}"
-                     placeholder="+63 9XX XXX XXXX">
-            </div>
-          </div>
-
-          {# ── Schedule ─────────────────────────────────────────── #}
-          <h6 class="text-uppercase text-muted small fw-bold mb-3 border-bottom pb-2">
-            <i class="bi bi-clock me-1"></i>Schedule
-          </h6>
-          <div class="row g-3 mb-4">
-            <div class="col-12 col-md-5">
-              <label class="form-label">Meeting Date <span class="text-danger">*</span></label>
-              <input type="date" name="meeting_date" class="form-control"
-                     value="{{ meeting.meeting_date.strftime('%Y-%m-%d') if meeting and meeting.meeting_date else '' }}"
-                     required>
-            </div>
-            <div class="col-12 col-md-4">
-              <label class="form-label">Time <span class="text-danger">*</span></label>
-              <input type="time" name="meeting_time" class="form-control"
-                     value="{{ meeting.meeting_time.strftime('%H:%M') if meeting and meeting.meeting_time else '' }}"
-                     required>
-            </div>
-            <div class="col-12 col-md-3">
-              <label class="form-label">Status</label>
-              <select name="status" class="form-select">
-                {% for s in status_options %}
-                <option value="{{ s }}"
-                  {% if meeting and meeting.status == s %}selected{% elif not meeting and s == 'scheduled' %}selected{% endif %}>
-                  {{ s | replace('_', ' ') | title }}
-                </option>
-                {% endfor %}
-              </select>
-            </div>
-          </div>
-
-          {# ── Location ─────────────────────────────────────────── #}
-          <h6 class="text-uppercase text-muted small fw-bold mb-3 border-bottom pb-2">
-            <i class="bi bi-geo-alt me-1"></i>Location
-          </h6>
-          <div class="mb-4">
-            <label class="form-label">Meeting Venue / Address <span class="text-danger">*</span></label>
-            <input type="text" name="location" class="form-control"
-                   value="{{ meeting.location if meeting else '' }}"
-                   placeholder="e.g. Metro Events Office, Starbucks BF Parañaque…" required>
-          </div>
-
-          {# ── Package ──────────────────────────────────────────── #}
-          <h6 class="text-uppercase text-muted small fw-bold mb-3 border-bottom pb-2">
-            <i class="bi bi-box-seam me-1"></i>Package
-          </h6>
-          <div class="row g-3 mb-4">
-            <div class="col-12 col-md-5">
-              <label class="form-label">Package Availed <span class="text-danger">*</span></label>
-              <select name="package_availed" class="form-select" required>
-                <option value="" disabled {% if not meeting %}selected{% endif %}>Select package…</option>
-                {% for pkg in packages %}
-                <option value="{{ pkg }}"
-                  {% if meeting and meeting.package_availed == pkg %}selected{% endif %}>
-                  {{ pkg }}
-                </option>
-                {% endfor %}
-              </select>
-            </div>
-            <div class="col-12 col-md-7">
-              <label class="form-label">Package Notes</label>
-              <input type="text" name="package_notes" class="form-control"
-                     value="{{ meeting.package_notes if meeting else '' }}"
-                     placeholder="Specific inclusions, add-ons, client requests…">
-            </div>
-          </div>
-
-          {# ── Linked Event (optional) ───────────────────────────── #}
-          {% if events %}
-          <h6 class="text-uppercase text-muted small fw-bold mb-3 border-bottom pb-2">
-            <i class="bi bi-link-45deg me-1"></i>Link to Existing Event <span class="text-muted fw-normal">(optional)</span>
-          </h6>
-          <div class="mb-4">
-            <select name="event_id" class="form-select">
-              <option value="">— Not linked to an event —</option>
-              {% for ev in events %}
-              <option value="{{ ev.id }}"
-                {% if meeting and meeting.event_id == ev.id %}selected{% endif %}>
-                #{{ ev.id }} — {{ ev.name }}
-              </option>
-              {% endfor %}
+<div style="max-width:680px;">
+  <div class="me-card">
+    <div class="me-card-header">
+      <h5><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Meeting Details</h5>
+    </div>
+    <div class="me-card-body">
+      <form method="POST" action="{{ url_for('meetings.edit_meeting', meeting_id=meeting.id) if meeting else url_for('meetings.new_meeting') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <div class="form-row cols-2">
+          <div class="me-form-group">
+            <label class="me-label">Client <span style="color:var(--danger)">*</span></label>
+            <select name="client_id" class="me-select" required>
+              <option value="">Select client…</option>
+              {% for c in clients %}<option value="{{ c.id }}" {{ 'selected' if meeting and meeting.client_id == c.id }}>{{ c.full_name }}</option>{% endfor %}
             </select>
           </div>
-          {% endif %}
-
-          {# ── Buttons ──────────────────────────────────────────── #}
-          <div class="d-flex gap-2 justify-content-end">
-            <a href="{{ url_for('meetings.index') }}" class="btn btn-outline-secondary">
-              Cancel
-            </a>
-            <button type="submit" class="btn btn-primary">
-              <i class="bi bi-check-lg me-1"></i>
-              {% if meeting %}Save Changes{% else %}Schedule Meeting{% endif %}
-            </button>
+          <div class="me-form-group">
+            <label class="me-label">Related Event</label>
+            <select name="event_id" class="me-select">
+              <option value="">None</option>
+              {% for e in events %}<option value="{{ e.id }}" {{ 'selected' if meeting and meeting.event_id == e.id }}>{{ e.name }}</option>{% endfor %}
+            </select>
           </div>
-        </form>
-      </div>
+        </div>
+        <div class="form-row cols-2">
+          <div class="me-form-group">
+            <label class="me-label">Meeting Type</label>
+            <select name="meeting_type" class="me-select">
+              {% for t in meeting_types %}<option value="{{ t }}" {{ 'selected' if meeting and meeting.meeting_type == t }}>{{ t | replace('_',' ') | title }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="me-form-group">
+            <label class="me-label">Status</label>
+            <select name="status" class="me-select">
+              {% for s in statuses %}<option value="{{ s }}" {{ 'selected' if meeting and meeting.status == s }}>{{ s | replace('_',' ') | title }}</option>{% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="form-row cols-2">
+          <div class="me-form-group">
+            <label class="me-label">Date <span style="color:var(--danger)">*</span></label>
+            <input type="date" name="meeting_date" class="me-input" value="{{ meeting.meeting_date.strftime('%Y-%m-%d') if meeting else '' }}" required />
+          </div>
+          <div class="me-form-group">
+            <label class="me-label">Time</label>
+            <input type="time" name="meeting_time" class="me-input" value="{{ meeting.meeting_time.strftime('%H:%M') if meeting and meeting.meeting_time else '' }}" />
+          </div>
+        </div>
+        <div class="form-row cols-2">
+          <div class="me-form-group">
+            <label class="me-label">Location</label>
+            <input type="text" name="location" class="me-input" value="{{ meeting.location if meeting else '' }}" placeholder="Office, Zoom, Client's venue…" />
+          </div>
+          <div class="me-form-group">
+            <label class="me-label">Coordinator</label>
+            <select name="coordinator_id" class="me-select">
+              <option value="">Unassigned</option>
+              {% for u in team %}<option value="{{ u.id }}" {{ 'selected' if meeting and meeting.coordinator_id == u.id }}>{{ u.name }}</option>{% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="me-form-group">
+          <label class="me-label">Meeting Notes</label>
+          <textarea name="notes" class="me-textarea" rows="3" placeholder="Pre-meeting agenda, talking points, or post-meeting summary…">{{ meeting.notes if meeting else '' }}</textarea>
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;padding-top:10px;border-top:1px solid var(--admin-border);">
+          <a href="{{ url_for('meetings.index') }}" class="btn-me btn-outline-me">Cancel</a>
+          <button type="submit" class="btn-me btn-gold"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg>{{ 'Save Changes' if meeting else 'Schedule Meeting' }}</button>
+        </div>
+      </form>
     </div>
   </div>
 </div>

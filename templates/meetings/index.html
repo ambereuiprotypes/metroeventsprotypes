@@ -1,243 +1,136 @@
 {% extends "base.html" %}
-{% block title %}Meeting Schedules — {{ APP_NAME }}{% endblock %}
-
-{% block content %}
-<div class="page-header d-flex align-items-center justify-content-between mb-4">
-  <div>
-    <h2 class="mb-0"><i class="bi bi-calendar2-event me-2 text-primary"></i>Meeting Schedules</h2>
-    <small class="text-muted">All client consultations and package discussions</small>
-  </div>
-  <a href="{{ url_for('meetings.new') }}" class="btn btn-primary">
-    <i class="bi bi-plus-lg me-1"></i> Schedule Meeting
-  </a>
-</div>
-
-{# ── Stat Cards ──────────────────────────────────────────────── #}
-<div class="row g-3 mb-4">
-  <div class="col-6 col-md-3">
-    <div class="card text-center border-0 shadow-sm">
-      <div class="card-body py-3">
-        <div class="fs-2 fw-bold text-primary">{{ stats.total }}</div>
-        <div class="small text-muted">Total Meetings</div>
-      </div>
-    </div>
-  </div>
-  <div class="col-6 col-md-3">
-    <div class="card text-center border-0 shadow-sm">
-      <div class="card-body py-3">
-        <div class="fs-2 fw-bold text-warning">{{ stats.today }}</div>
-        <div class="small text-muted">Today</div>
-      </div>
-    </div>
-  </div>
-  <div class="col-6 col-md-3">
-    <div class="card text-center border-0 shadow-sm">
-      <div class="card-body py-3">
-        <div class="fs-2 fw-bold text-info">{{ stats.upcoming }}</div>
-        <div class="small text-muted">Upcoming</div>
-      </div>
-    </div>
-  </div>
-  <div class="col-6 col-md-3">
-    <div class="card text-center border-0 shadow-sm">
-      <div class="card-body py-3">
-        <div class="fs-2 fw-bold text-success">{{ stats.completed }}</div>
-        <div class="small text-muted">Completed</div>
-      </div>
-    </div>
-  </div>
-</div>
-
-{# ── Filter Bar ──────────────────────────────────────────────── #}
-<div class="card border-0 shadow-sm mb-4">
-  <div class="card-body py-2">
-    <form method="GET" action="{{ url_for('meetings.index') }}" class="row g-2 align-items-end">
-      <div class="col-12 col-md-3">
-        <input type="text" name="q" class="form-control form-control-sm"
-               placeholder="Search client / location / package…"
-               value="{{ filters.q }}">
-      </div>
-      <div class="col-6 col-md-2">
-        <select name="status" class="form-select form-select-sm">
-          <option value="">All Statuses</option>
-          <option value="scheduled"  {% if filters.status == 'scheduled'  %}selected{% endif %}>Scheduled</option>
-          <option value="completed"  {% if filters.status == 'completed'  %}selected{% endif %}>Completed</option>
-          <option value="cancelled"  {% if filters.status == 'cancelled'  %}selected{% endif %}>Cancelled</option>
-          <option value="no_show"    {% if filters.status == 'no_show'    %}selected{% endif %}>No Show</option>
-        </select>
-      </div>
-      <div class="col-6 col-md-2">
-        <input type="date" name="date_from" class="form-control form-control-sm"
-               value="{{ filters.date_from }}" placeholder="From">
-      </div>
-      <div class="col-6 col-md-2">
-        <input type="date" name="date_to" class="form-control form-control-sm"
-               value="{{ filters.date_to }}" placeholder="To">
-      </div>
-      <div class="col-6 col-md-2">
-        <button type="submit" class="btn btn-sm btn-secondary w-100">
-          <i class="bi bi-funnel me-1"></i>Filter
-        </button>
-      </div>
-      {% if filters.q or filters.status or filters.date_from or filters.date_to %}
-      <div class="col-6 col-md-1">
-        <a href="{{ url_for('meetings.index') }}" class="btn btn-sm btn-outline-secondary w-100">Clear</a>
-      </div>
-      {% endif %}
-    </form>
-  </div>
-</div>
-
-{# ── Meetings Table ───────────────────────────────────────────── #}
-<div class="card border-0 shadow-sm">
-  <div class="card-body p-0">
-    {% if meetings %}
-    <div class="table-responsive">
-      <table class="table table-hover align-middle mb-0">
-        <thead class="table-light">
-          <tr>
-            <th class="ps-3">#</th>
-            <th>Client</th>
-            <th>Date &amp; Time</th>
-            <th>Location</th>
-            <th>Package Availed</th>
-            <th>Status</th>
-            <th class="text-end pe-3">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for mtg in meetings %}
-          {% set label, badge_cls = mtg.status_label %}
-          <tr class="{% if mtg.meeting_date == today and mtg.status == 'scheduled' %}table-warning{% endif %}">
-            <td class="ps-3 text-muted small">{{ loop.index }}</td>
-
-            {# Client #}
-            <td>
-              <div class="fw-semibold">{{ mtg.client_name }}</div>
-              {% if mtg.contact_no %}
-              <small class="text-muted"><i class="bi bi-telephone me-1"></i>{{ mtg.contact_no }}</small>
-              {% endif %}
-              {% if mtg.event %}
-              <br><small class="text-info"><i class="bi bi-link-45deg"></i>{{ mtg.event.name }}</small>
-              {% endif %}
-            </td>
-
-            {# Date & Time #}
-            <td>
-              <div class="fw-semibold">
-                {{ mtg.meeting_date | dateformat }}
-              </div>
-              <small class="text-muted">
-                <i class="bi bi-clock me-1"></i>
-                {{ mtg.meeting_time.strftime("%I:%M %p") }}
-              </small>
-            </td>
-
-            {# Location #}
-            <td>
-              <i class="bi bi-geo-alt text-danger me-1"></i>
-              {{ mtg.location }}
-            </td>
-
-            {# Package #}
-            <td>
-              <span class="badge bg-primary bg-opacity-10 text-primary fw-normal px-2 py-1">
-                {{ mtg.package_availed }}
-              </span>
-              {% if mtg.package_notes %}
-              <br><small class="text-muted fst-italic">{{ mtg.package_notes | truncate(60) }}</small>
-              {% endif %}
-            </td>
-
-            {# Status #}
-            <td>
-              <span class="badge {{ badge_cls }}">{{ label }}</span>
-            </td>
-
-            {# Actions #}
-            <td class="text-end pe-3">
-              <div class="dropdown">
-                <button class="btn btn-sm btn-outline-secondary dropdown-toggle"
-                        data-bs-toggle="dropdown">
-                  <i class="bi bi-three-dots"></i>
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end">
-                  <li>
-                    <a class="dropdown-item"
-                       href="{{ url_for('meetings.edit', meeting_id=mtg.id) }}">
-                      <i class="bi bi-pencil me-2"></i>Edit
-                    </a>
-                  </li>
-                  {% if mtg.status == 'scheduled' %}
-                  <li>
-                    <button class="dropdown-item text-success status-btn"
-                            data-id="{{ mtg.id }}" data-status="completed">
-                      <i class="bi bi-check-circle me-2"></i>Mark Completed
-                    </button>
-                  </li>
-                  <li>
-                    <button class="dropdown-item text-warning status-btn"
-                            data-id="{{ mtg.id }}" data-status="no_show">
-                      <i class="bi bi-person-x me-2"></i>Mark No Show
-                    </button>
-                  </li>
-                  <li>
-                    <button class="dropdown-item text-danger status-btn"
-                            data-id="{{ mtg.id }}" data-status="cancelled">
-                      <i class="bi bi-x-circle me-2"></i>Cancel
-                    </button>
-                  </li>
-                  <li><hr class="dropdown-divider"></li>
-                  {% endif %}
-                  <li>
-                    <form method="POST"
-                          action="{{ url_for('meetings.delete', meeting_id=mtg.id) }}"
-                          onsubmit="return confirm('Delete this meeting?')">
-                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                      <button type="submit" class="dropdown-item text-danger">
-                        <i class="bi bi-trash me-2"></i>Delete
-                      </button>
-                    </form>
-                  </li>
-                </ul>
-              </div>
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-    {% else %}
-    <div class="text-center py-5 text-muted">
-      <i class="bi bi-calendar2-x display-4 d-block mb-3"></i>
-      <p class="mb-1">No meetings found.</p>
-      <a href="{{ url_for('meetings.new') }}" class="btn btn-sm btn-primary mt-2">
-        <i class="bi bi-plus-lg me-1"></i>Schedule the first one
-      </a>
-    </div>
-    {% endif %}
-  </div>
-</div>
+{% block title %}Meetings{% endblock %}
+{% block page_title %}Meetings{% endblock %}
+{% block breadcrumb %}Client consultations and follow-ups{% endblock %}
+{% block topbar_actions %}
+<a href="{{ url_for('meetings.new_meeting') }}" class="btn-me btn-gold">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+  Schedule Meeting
+</a>
 {% endblock %}
+{% block content %}
 
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px;">
+  {% for label, val, color in [
+    ('Scheduled',  scheduled_count,  'blue'),
+    ('Completed',  completed_count,  'green'),
+    ('No-Show',    no_show_count,    'red'),
+    ('This Week',  this_week_count,  'gold'),
+  ] %}
+  <div class="me-card" style="padding:16px 18px;display:flex;align-items:center;gap:14px;">
+    <div class="kpi-icon {{ color }}">
+      {% if color == 'blue' %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      {% elif color == 'green' %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+      {% elif color == 'red' %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+      {% else %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>{% endif %}
+    </div>
+    <div>
+      <div class="kpi-value" style="font-size:24px;">{{ val }}</div>
+      <div class="kpi-label">{{ label }}</div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="me-card mb-4" style="padding:14px 18px;">
+  <div style="display:flex;gap:10px;flex-wrap:wrap;">
+    <div style="position:relative;flex:1;min-width:180px;">
+      <svg style="position:absolute;left:12px;top:50%;transform:translateY(-50%);width:14px;height:14px;color:var(--admin-text-muted);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" id="mtgSearch" class="me-input" placeholder="Search by client or notes…" onkeyup="filterMtg()" style="padding-left:36px;" />
+    </div>
+    <select id="statusFilter" class="me-select" onchange="filterMtg()" style="width:150px;">
+      <option value="">All Statuses</option>
+      <option value="scheduled">Scheduled</option>
+      <option value="completed">Completed</option>
+      <option value="cancelled">Cancelled</option>
+      <option value="no_show">No-Show</option>
+    </select>
+  </div>
+</div>
+
+<div class="me-card">
+  <div class="me-card-body p-0">
+    <div class="me-table-wrap">
+    <table class="me-table" id="mtgTable">
+      <thead>
+        <tr>
+          <th>Client</th><th>Type</th><th>Date &amp; Time</th>
+          <th>Location</th><th>Status</th><th>Coordinator</th><th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for m in meetings.items %}
+        <tr data-search="{{ (m.client.full_name ~ ' ' ~ (m.notes or '')) | lower }}"
+            data-status="{{ m.status }}">
+          <td data-label="Client">
+            <a href="{{ url_for('clients.detail', client_id=m.client_id) }}"
+               style="font-weight:700;color:var(--admin-text);text-decoration:none;">{{ m.client.full_name }}</a>
+            {% if m.event %}<div class="event-sub">{{ m.event.name }}</div>{% endif %}
+          </td>
+          <td data-label="Type">
+            <span class="tag gray">{{ m.meeting_type | replace('_',' ') | title }}</span>
+          </td>
+          <td data-label="Date & Time">
+            <strong style="font-size:13px;">{{ m.meeting_date | dateformat }}</strong>
+            <div class="event-sub">{{ m.meeting_time.strftime('%I:%M %p') if m.meeting_time else '—' }}</div>
+          </td>
+          <td data-label="Location" class="text-primary-sm">{{ m.location or 'TBD' }}</td>
+          <td data-label="Status">
+            <span class="meeting-badge {{ m.status }}">{{ m.status | replace('_',' ') | title }}</span>
+          </td>
+          <td data-label="Coordinator">
+            {% if m.coordinator %}<span class="tag gray">{{ m.coordinator.name }}</span>
+            {% else %}<span style="color:var(--admin-text-muted);font-size:12px;">—</span>{% endif %}
+          </td>
+          <td data-label="Actions">
+            <div class="me-table-actions">
+              <a href="{{ url_for('meetings.edit_meeting', meeting_id=m.id) }}" class="btn-icon" title="Edit">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              </a>
+              <form method="POST" action="{{ url_for('meetings.delete_meeting', meeting_id=m.id) }}"
+                    onsubmit="return confirm('Delete this meeting?')">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                <button type="submit" class="btn-icon danger">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7">
+          <div class="me-empty"><h6>No meetings scheduled</h6></div>
+        </td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </div>
+</div>
+
+{% if meetings.pages > 1 %}
+<div class="me-pagination">
+  {% for p in meetings.iter_pages() %}
+    {% if p %}
+      <a href="{{ url_for('meetings.index', page=p) }}"
+         class="me-page-btn {{ 'active' if p == meetings.page }}">{{ p }}</a>
+    {% else %}
+      <span class="me-page-btn disabled">…</span>
+    {% endif %}
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}
 {% block scripts %}
 <script>
-// Inline status update via AJAX
-document.querySelectorAll(".status-btn").forEach(btn => {
-  btn.addEventListener("click", async function () {
-    const id     = this.dataset.id;
-    const status = this.dataset.status;
-    const res    = await fetch(`/meetings/${id}/status`, {
-      method:  "POST",
-      headers: {
-        "Content-Type":  "application/json",
-        "X-CSRFToken":   document.cookie.match(/csrf_token=([^;]+)/)?.[1] ?? ""
-      },
-      body: JSON.stringify({ status })
-    });
-    if (res.ok) location.reload();
-    else        alert("Could not update status.");
+function filterMtg() {
+  const q  = document.getElementById('mtgSearch').value.toLowerCase();
+  const st = document.getElementById('statusFilter').value;
+  document.querySelectorAll('#mtgTable tbody tr').forEach(r => {
+    r.style.display =
+      ((!q  || r.dataset.search.includes(q)) &&
+       (!st || r.dataset.status === st)) ? '' : 'none';
   });
-});
+}
 </script>
 {% endblock %}
